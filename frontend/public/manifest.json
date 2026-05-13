@@ -1,8 +1,25 @@
 {
-  "short_name": "PWAApp",
-  "name": "Capstone PWA App",
-  "display": "standalone",
+  "short_name": "FishLodger",
+  "name": "FishLodger: Lucena Fish Port Monitoring System",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
   "start_url": ".",
-  "theme_color": "#000000",
+  "display": "standalone",
+  "theme_color": "#1a2a6c",
   "background_color": "#ffffff"
 }
