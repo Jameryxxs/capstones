@@ -1,0 +1,8 @@
+{
+  "short_name": "PWAApp",
+  "name": "Capstone PWA App",
+  "display": "standalone",
+  "start_url": ".",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

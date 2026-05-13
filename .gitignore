@@ -1,0 +1,38 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+db.sqlite3
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+build/
+frontend/build/
+.eslintcache
+
+# Environment Variables
+.env
+.env.local
+
+# Media and Static
+media/
+backend/media/
+staticfiles/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System Files
+.DS_Store
+Thumbs.db
