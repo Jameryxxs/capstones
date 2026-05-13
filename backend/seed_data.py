@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from api.models import Fish, Retailer, FishPrice, User, FishingLocation, SupplySource
+from api.models import Fish, Retailer, FishPrice, User, FishingLocation, SupplySource, Inventory
 from django.utils import timezone
 
 def generate_data():
@@ -106,7 +106,24 @@ def generate_data():
                 }
             )
 
-    print("Success! 1000 records, locations, and suppliers added.")
+    # 6. Create Initial Inventory for each retailer
+    print("Generating inventory for stalls...")
+    for retailer in retailer_objs:
+        # Clear existing inventory to avoid duplicates if run multiple times
+        Inventory.objects.filter(retailer=retailer).delete()
+        
+        # Give each retailer 5-8 random fish species in their stall
+        sample_fish = random.sample(fish_objs, random.randint(5, 8))
+        for fish in sample_fish:
+            Inventory.objects.create(
+                fish=fish,
+                retailer=retailer,
+                stock_quantity=random.randint(10, 100),
+                stock_unit='kg',
+                availability_status='Available'
+            )
+
+    print("Success! 1000 records, locations, suppliers, and inventory added.")
 
 if __name__ == "__main__":
     generate_data()

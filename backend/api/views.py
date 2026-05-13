@@ -1,5 +1,5 @@
-from rest_framework import viewsets, generics, permissions
-from rest_framework.decorators import api_view
+from rest_framework import viewsets, generics, permissions, status
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from django.db.models import Avg
 import numpy as np
@@ -58,19 +58,14 @@ def download_market_bulletin(request):
 def get_dashboard_stats(request):
     total_fish = Fish.objects.count()
     active_retailers = Retailer.objects.filter(status='Active').count()
-    
-    # Recent price trends (last 7 days)
     today = date.today()
     trends = []
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
         avg = FishPrice.objects.filter(market_date=day).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg'] or 0
         trends.append({"date": day.strftime('%m/%d'), "price": round(float(avg), 2)})
-
-    # Category distribution
-    categories = Fish.objects.values('category').annotate(count=Avg('id')) # Using Avg as a dummy to group
+    categories = Fish.objects.values('category').annotate(count=Avg('id'))
     cat_dist = [{"name": c['category'], "value": Fish.objects.filter(category=c['category']).count()} for c in categories]
-
     return Response({
         "total_fish": total_fish,
         "active_retailers": active_retailers,
@@ -85,6 +80,13 @@ class FishViewSet(viewsets.ModelViewSet):
 class RetailerViewSet(viewsets.ModelViewSet):
     queryset = Retailer.objects.all()
     serializer_class = RetailerSerializer
+
+    @action(detail=True, methods=['get'])
+    def inventory(self, request, pk=None):
+        retailer = self.get_object()
+        inventory = Inventory.objects.filter(retailer=retailer)
+        serializer = InventorySerializer(inventory, many=True)
+        return Response(serializer.data)
 
 class FishPriceViewSet(viewsets.ModelViewSet):
     queryset = FishPrice.objects.all()
@@ -101,6 +103,18 @@ class SupplySourceViewSet(viewsets.ModelViewSet):
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
+
+    @action(detail=False, methods=['get'])
+    def my_stall(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Not authenticated"}, status=401)
+        try:
+            retailer = Retailer.objects.get(user=request.user)
+            inventory = Inventory.objects.filter(retailer=retailer)
+            serializer = InventorySerializer(inventory, many=True)
+            return Response(serializer.data)
+        except Retailer.DoesNotExist:
+            return Response({"error": "Retailer profile not found"}, status=404)
 
 class FishDeliveryViewSet(viewsets.ModelViewSet):
     queryset = FishDelivery.objects.all()
