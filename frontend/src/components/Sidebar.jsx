@@ -1,17 +1,22 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { getUserRole } from '../api';
 
 const Sidebar = () => {
     const navigate = useNavigate();
-    const links = [
-        { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { path: '/prices', label: 'Fish Prices', icon: '💰' },
-        { path: '/retailers', label: 'Retailers', icon: '🏪' },
-        { path: '/supply', label: 'Supply Sources', icon: '🚢' },
-        { path: '/reports', label: 'Reports', icon: '📄' },
-        { path: '/analytics', label: 'Analytics', icon: '📈' },
-        { path: '/settings', label: 'Settings', icon: '⚙️' },
+    const role = getUserRole();
+
+    const allLinks = [
+        { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'retailer', 'staff'] },
+        { path: '/prices', label: 'Fish Prices', icon: '💰', roles: ['admin', 'retailer', 'staff'] },
+        { path: '/retailers', label: 'Retailers', icon: '🏪', roles: ['admin', 'staff'] },
+        { path: '/supply', label: 'Supply Sources', icon: '🚢', roles: ['admin', 'staff'] },
+        { path: '/reports', label: 'Reports', icon: '📄', roles: ['admin', 'retailer', 'staff'] },
+        { path: '/analytics', label: 'Analytics', icon: '📈', roles: ['admin'] },
+        { path: '/settings', label: 'Settings', icon: '⚙️', roles: ['admin', 'retailer', 'staff'] },
     ];
+
+    const filteredLinks = allLinks.filter(link => link.roles.includes(role));
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
@@ -33,7 +38,7 @@ const Sidebar = () => {
             flexDirection: 'column'
         }}>
             <div style={{ flex: 1 }}>
-                {links.map(link => (
+                {filteredLinks.map(link => (
                     <NavLink 
                         key={link.path} 
                         to={link.path} 

@@ -8,6 +8,7 @@ const Prices = () => {
     const [fishes, setFishes] = useState([]);
     const [retailers, setRetailers] = useState([]);
     const [showForm, setShowForm] = useState(false);
+    const [filters, setFilters] = useState({ fish: '', retailer: '', date: '' });
     const [formData, setFormData] = useState({
         fish: '',
         retailer: '',
@@ -35,6 +36,16 @@ const Prices = () => {
             console.error(err);
         }
     };
+
+    const handleFilterChange = (e) => {
+        setFilters({ ...filters, [e.target.name]: e.target.value });
+    };
+
+    const filteredPrices = prices.filter(p => {
+        return (filters.fish === '' || p.fish === parseInt(filters.fish)) &&
+               (filters.retailer === '' || p.retailer === parseInt(filters.retailer)) &&
+               (filters.date === '' || p.market_date === filters.date);
+    });
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -107,10 +118,36 @@ const Prices = () => {
                 </Card>
             )}
 
+            <Card style={{ marginBottom: '20px', background: '#e9ecef' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', alignItems: 'end' }}>
+                    <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Filter Fish</label>
+                        <select name="fish" value={filters.fish} onChange={handleFilterChange} style={{ width: '100%', padding: '8px' }}>
+                            <option value="">All Species</option>
+                            {fishes.map(f => <option key={f.id} value={f.id}>{f.fish_name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Filter Retailer</label>
+                        <select name="retailer" value={filters.retailer} onChange={handleFilterChange} style={{ width: '100%', padding: '8px' }}>
+                            <option value="">All Retailers</option>
+                            {retailers.map(r => <option key={r.id} value={r.id}>{r.business_name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Filter Date</label>
+                        <input name="date" type="date" value={filters.date} onChange={handleFilterChange} style={{ width: '100%', padding: '8px' }} />
+                    </div>
+                    <button onClick={() => setFilters({ fish: '', retailer: '', date: '' })} style={{ padding: '8px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                        Clear Filters
+                    </button>
+                </div>
+            </Card>
+
             <Card>
                 <Table 
                     headers={['Date', 'Fish Species', 'Retailer', 'Price / kg', 'Available Qty']} 
-                    data={prices.slice(0, 50)} // Show only latest 50 for performance
+                    data={filteredPrices.slice(0, 50)} 
                     renderRow={(item) => (
                         <>
                             <td style={{ padding: '12px' }}>{item.market_date}</td>
@@ -121,7 +158,7 @@ const Prices = () => {
                         </>
                     )}
                 />
-                {prices.length > 50 && <p style={{ textAlign: 'center', color: '#666', marginTop: '10px' }}>Showing latest 50 records. Total: {prices.length}</p>}
+                {filteredPrices.length > 50 && <p style={{ textAlign: 'center', color: '#666', marginTop: '10px' }}>Showing latest 50 records. Total matches: {filteredPrices.length}</p>}
             </Card>
         </div>
     );

@@ -10,10 +10,15 @@ const Dashboard = () => {
         price_trends: [],
         category_dist: []
     });
+    const [weather, setWeather] = useState(null);
 
     useEffect(() => {
         axios.get('http://127.0.0.1:8000/api/dashboard-stats/')
             .then(res => setStats(res.data))
+            .catch(err => console.error(err));
+        
+        axios.get('http://127.0.0.1:8000/api/weather/')
+            .then(res => setWeather(res.data))
             .catch(err => console.error(err));
     }, []);
 
@@ -27,6 +32,7 @@ const Dashboard = () => {
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                {/* Previous Stat Cards */}
                 <Card style={{ borderLeft: '5px solid #007bff' }}>
                     <p style={{ margin: 0, color: '#666', fontSize: '0.9rem', fontWeight: 'bold' }}>TOTAL FISH SPECIES</p>
                     <h2 style={{ margin: '10px 0', fontSize: '2rem' }}>{stats.total_fish}</h2>
@@ -37,12 +43,28 @@ const Dashboard = () => {
                     <h2 style={{ margin: '10px 0', fontSize: '2rem' }}>{stats.active_retailers}</h2>
                     <p style={{ margin: 0, color: '#666', fontSize: '0.8rem' }}>Lucena Fish Port Complex</p>
                 </Card>
-                {/* Other cards can be static or dynamic */}
-                <Card style={{ borderLeft: '5px solid #ffc107' }}>
-                    <p style={{ margin: 0, color: '#666', fontSize: '0.9rem', fontWeight: 'bold' }}>DAILY SUPPLY VOLUME</p>
-                    <h2 style={{ margin: '10px 0', fontSize: '2rem' }}>1.2k kg</h2>
-                    <p style={{ margin: 0, color: '#666', fontSize: '0.8rem' }}>Identified sources: 5</p>
-                </Card>
+                
+                {/* Weather Widget */}
+                {weather && (
+                    <Card style={{ background: 'linear-gradient(to right, #4facfe 0%, #00f2fe 100%)', color: '#fff' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 'bold', opacity: 0.8 }}>PORT WEATHER</p>
+                                <h2 style={{ margin: '5px 0', fontSize: '1.8rem' }}>{weather.temp}°C</h2>
+                                <p style={{ margin: 0, fontSize: '0.9rem' }}>{weather.description}</p>
+                            </div>
+                            <img 
+                                src={`http://openweathermap.org/img/wn/${weather.icon}@2x.png`} 
+                                alt="weather icon" 
+                                style={{ width: '60px' }} 
+                            />
+                        </div>
+                        <p style={{ margin: '10px 0 0', fontSize: '0.7rem', opacity: 0.7 }}>
+                            Wind: {weather.wind_speed} m/s | Humidity: {weather.humidity}%
+                        </p>
+                    </Card>
+                )}
+
                 <Card style={{ borderLeft: '5px solid #dc3545' }}>
                     <p style={{ margin: 0, color: '#666', fontSize: '0.9rem', fontWeight: 'bold' }}>SYSTEM STATUS</p>
                     <h2 style={{ margin: '10px 0', fontSize: '2rem' }}>Online</h2>

@@ -1,6 +1,7 @@
 from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Avg
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -15,9 +16,13 @@ from .serializers import (
     FishPriceSerializer, FishingLocationSerializer, 
     SupplySourceSerializer, InventorySerializer, 
     FishDeliverySerializer, ReportSerializer, 
-    PredictionSerializer, NotificationSerializer
+    PredictionSerializer, NotificationSerializer,
+    MyTokenObtainPairSerializer
 )
 from .utils import generate_market_bulletin
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -53,6 +58,45 @@ def get_price_forecast(request, fish_id):
 @api_view(['GET'])
 def download_market_bulletin(request):
     return generate_market_bulletin(request)
+
+import json
+import urllib.request
+from django.conf import settings
+
+@api_view(['GET'])
+def get_weather(request):
+    # Lucena City Coordinates
+    lat = 13.9413
+    lon = 121.6212
+    api_key = getattr(settings, 'OPENWEATHER_API_KEY', None)
+    
+    if not api_key:
+        # Fallback Mock Data
+        return Response({
+            "city": "Lucena City",
+            "temp": 29.5,
+            "description": "Partly Cloudy",
+            "icon": "03d",
+            "humidity": 78,
+            "wind_speed": 4.2,
+            "is_mock": True
+        })
+    
+    try:
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+            return Response({
+                "city": data['name'],
+                "temp": data['main']['temp'],
+                "description": data['weather'][0]['description'].capitalize(),
+                "icon": data['weather'][0]['icon'],
+                "humidity": data['main']['humidity'],
+                "wind_speed": data['wind']['speed'],
+                "is_mock": False
+            })
+    except Exception as e:
+        return Response({"error": "Failed to fetch weather"}, status=500)
 
 @api_view(['GET'])
 def get_dashboard_stats(request):
