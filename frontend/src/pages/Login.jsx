@@ -1,102 +1,84 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Card from '../components/Card';
-import { authApi } from '../api';
 
 const Login = () => {
-    const [credentials, setCredentials] = useState({ username: '', password: '' });
-    const [error, setError] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setCredentials({ ...credentials, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
         try {
-            const res = await authApi.login(credentials);
+            const res = await axios.post('http://127.0.0.1:8000/api/auth/login/', { username, password });
             localStorage.setItem('access_token', res.data.access);
             localStorage.setItem('refresh_token', res.data.refresh);
             navigate('/dashboard');
+            window.location.reload(); 
         } catch (err) {
-            setError('Invalid username or password');
+            setError('Invalid credentials. Please check your username and password.');
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '85vh', background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)' }}>
-            <Card style={{ width: '90%', maxWidth: '360px', padding: '30px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                <h1 style={{ textAlign: 'center', color: '#1a2a6c', marginBottom: '10px', fontSize: '1.8rem' }}>FishLodger</h1>
-                <p style={{ textAlign: 'center', color: '#666', marginBottom: '30px', fontSize: '0.9rem' }}>Sign in to Lucena Fish Port MS</p>
-                
-                {error && <p style={{ color: '#dc3545', textAlign: 'center', background: '#f8d7da', padding: '10px', borderRadius: '4px', fontSize: '0.85rem', marginBottom: '15px' }}>{error}</p>}
-                
-                <form onSubmit={handleSubmit}>
-                    <div style={{ marginBottom: '15px' }}>
-                        <label style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#333' }}>Username</label>
+        <div style={{ 
+            minHeight: '80vh', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: '20px'
+        }}>
+            <Card style={{ width: '100%', maxWidth: '450px', padding: '40px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h2 style={{ color: 'var(--primary-navy)', fontSize: '1.8rem', margin: '0 0 10px' }}>Welcome Back</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Access the FishLodger port management system</p>
+                </div>
+
+                <form onSubmit={handleLogin}>
+                    <div style={{ marginBottom: '20px' }}>
+                        <label>Username</label>
                         <input 
                             type="text" 
-                            name="username" 
-                            value={credentials.username} 
-                            onChange={handleChange} 
-                            required 
-                            style={{ 
-                                width: '100%', 
-                                padding: '10px 12px', 
-                                marginTop: '5px', 
-                                borderRadius: '6px', 
-                                border: '1px solid #ddd',
-                                boxSizing: 'border-box' 
-                            }} 
                             placeholder="Enter your username" 
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
                         />
                     </div>
                     <div style={{ marginBottom: '25px' }}>
-                        <label style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#333' }}>Password</label>
+                        <label>Password</label>
                         <input 
                             type="password" 
-                            name="password" 
-                            value={credentials.password} 
-                            onChange={handleChange} 
-                            required 
-                            style={{ 
-                                width: '100%', 
-                                padding: '10px 12px', 
-                                marginTop: '5px', 
-                                borderRadius: '6px', 
-                                border: '1px solid #ddd',
-                                boxSizing: 'border-box' 
-                            }} 
-                            placeholder="Enter your password" 
+                            placeholder="••••••••" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
                         />
                     </div>
+
+                    {error && <p style={{ color: 'var(--danger-red)', fontSize: '0.85rem', marginBottom: '20px', fontWeight: '500' }}>{error}</p>}
+
                     <button 
-                        disabled={loading} 
-                        style={{ 
-                            width: '100%', 
-                            padding: '12px', 
-                            background: '#1a2a6c', 
-                            color: '#fff', 
-                            border: 'none', 
-                            borderRadius: '6px', 
-                            cursor: 'pointer', 
-                            fontSize: '1rem', 
-                            fontWeight: 'bold',
-                            transition: 'background 0.3s'
-                        }}
+                        type="submit" 
+                        className="btn-primary" 
+                        disabled={loading}
+                        style={{ width: '100%', padding: '14px', fontSize: '1rem' }}
                     >
-                        {loading ? 'Logging in...' : 'Login to System'}
+                        {loading ? 'Authenticating...' : 'Sign In'}
                     </button>
+
+                    <div style={{ marginTop: '25px', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        Don't have an account? <Link to="/register" style={{ color: 'var(--secondary-blue)', textDecoration: 'none', fontWeight: 'bold' }}>Register here</Link>
+                    </div>
                 </form>
-                <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.85rem', color: '#666' }}>
-                    Don't have an account? <Link to="/register" style={{ color: '#007bff', textDecoration: 'none', fontWeight: 'bold' }}>Register here</Link>
-                </p>
             </Card>
         </div>
     );

@@ -18,3 +18,4 @@ const ChartBox = ({ title, placeholder }) => (
 );
 
 export default ChartBox;
+

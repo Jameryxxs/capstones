@@ -8,7 +8,9 @@ from .views import (
     FishDeliveryViewSet, ReportViewSet, 
     PredictionViewSet, NotificationViewSet,
     get_price_forecast, download_market_bulletin,
-    RegisterView, get_dashboard_stats, MyTokenObtainPairView, get_weather
+    RegisterView, get_dashboard_stats, MyTokenObtainPairView, get_weather,
+    get_correlation_data, get_seasonality_data, get_supplier_performance, get_comparative_prices,
+    get_map_data
 )
 
 router = DefaultRouter()
@@ -33,4 +35,9 @@ urlpatterns = [
     path('weather/', get_weather, name='weather'),
     path('forecast/<int:fish_id>/', get_price_forecast, name='price-forecast'),
     path('bulletin/', download_market_bulletin, name='download-bulletin'),
+    path('correlation/<int:fish_id>/', get_correlation_data, name='correlation'),
+    path('seasonality/<int:fish_id>/', get_seasonality_data, name='seasonality'),
+    path('supplier-performance/', get_supplier_performance, name='supplier-performance'),
+    path('compare-prices/', get_comparative_prices, name='compare-prices'),
+    path('map-data/', get_map_data, name='map-data'),
 ]

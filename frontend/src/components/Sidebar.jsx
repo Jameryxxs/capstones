@@ -2,18 +2,46 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { getUserRole } from '../api';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose, isMobile }) => {
     const navigate = useNavigate();
-    const role = getUserRole();
+    const role = getUserRole() || 'guest';
+
+    const Icons = {
+        Dashboard: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        ),
+        Monitoring: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        ),
+        Prices: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        ),
+        Retailers: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        ),
+        Supply: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        ),
+        Reports: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        ),
+        Analytics: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        ),
+        Settings: () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51-1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        )
+    };
 
     const allLinks = [
-        { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'retailer', 'staff'] },
-        { path: '/prices', label: 'Fish Prices', icon: '💰', roles: ['admin', 'retailer', 'staff'] },
-        { path: '/retailers', label: 'Retailers', icon: '🏪', roles: ['admin', 'staff'] },
-        { path: '/supply', label: 'Supply Sources', icon: '🚢', roles: ['admin', 'staff'] },
-        { path: '/reports', label: 'Reports', icon: '📄', roles: ['admin', 'retailer', 'staff'] },
-        { path: '/analytics', label: 'Analytics', icon: '📈', roles: ['admin'] },
-        { path: '/settings', label: 'Settings', icon: '⚙️', roles: ['admin', 'retailer', 'staff'] },
+        { path: '/dashboard', label: 'Dashboard', icon: <Icons.Dashboard />, roles: ['admin', 'retailer', 'staff', 'guest'] },
+        { path: '/monitoring', label: 'Live Monitoring', icon: <Icons.Monitoring />, roles: ['admin', 'staff'] },
+        { path: '/prices', label: 'Fish Prices', icon: <Icons.Prices />, roles: ['admin', 'retailer', 'staff', 'guest'] },
+        { path: '/retailers', label: 'Retailers', icon: <Icons.Retailers />, roles: ['admin', 'staff'] },
+        { path: '/supply', label: 'Supply Sources', icon: <Icons.Supply />, roles: ['admin', 'staff'] },
+        { path: '/reports', label: 'Reports', icon: <Icons.Reports />, roles: ['admin', 'retailer', 'staff'] },
+        { path: '/analytics', label: 'Analytics', icon: <Icons.Analytics />, roles: ['admin'] },
+        { path: '/settings', label: 'Settings', icon: <Icons.Settings />, roles: ['admin', 'retailer', 'staff'] },
     ];
 
     const filteredLinks = allLinks.filter(link => link.roles.includes(role));
@@ -22,58 +50,93 @@ const Sidebar = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         navigate('/login');
+        if (onClose) onClose();
     };
 
+    const isLoggedIn = !!localStorage.getItem('access_token');
+
     return (
-        <aside style={{ 
-            width: '240px', 
-            background: '#2c3e50', 
-            color: '#fff', 
-            height: '100vh', 
-            position: 'fixed', 
-            top: '60px', 
-            left: 0,
-            padding: '20px 0',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            <div style={{ flex: 1 }}>
-                {filteredLinks.map(link => (
-                    <NavLink 
-                        key={link.path} 
-                        to={link.path} 
-                        style={({ isActive }) => ({
-                            display: 'block',
-                            padding: '12px 20px',
-                            color: isActive ? '#3498db' : '#ecf0f1',
-                            textDecoration: 'none',
-                            borderLeft: isActive ? '4px solid #3498db' : '4px solid transparent',
-                            background: isActive ? '#34495e' : 'transparent',
-                            fontSize: '16px'
-                        })}
+        <>
+            {/* Sidebar Overlay for Mobile */}
+            {isMobile && isOpen && (
+                <div 
+                    onClick={onClose}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0,0,0,0.5)',
+                        zIndex: 850
+                    }}
+                />
+            )}
+
+            <aside style={{ 
+                width: '240px', 
+                background: 'var(--primary-navy)', 
+                color: '#fff', 
+                height: '100vh', 
+                position: 'fixed', 
+                top: 0, 
+                left: isOpen ? 0 : '-240px',
+                padding: '80px 0 20px',
+                display: 'flex',
+                flexDirection: 'column',
+                zIndex: 900,
+                boxShadow: 'var(--shadow-md)',
+                transition: 'left 0.3s ease'
+            }}>
+                <div style={{ flex: 1 }}>
+                    {filteredLinks.map(link => (
+                        <NavLink 
+                            key={link.path} 
+                            to={link.path} 
+                            style={({ isActive }) => ({
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '14px 24px',
+                                color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                                textDecoration: 'none',
+                                borderLeft: isActive ? '4px solid var(--secondary-blue)' : '4px solid transparent',
+                                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                fontSize: '0.9rem',
+                                fontWeight: isActive ? '600' : '400',
+                                transition: 'var(--transition-fast)'
+                            })}
+                        >
+                            <span style={{ marginRight: '12px', display: 'flex', alignItems: 'center', opacity: 0.8 }}>{link.icon}</span>
+                            {link.label}
+                        </NavLink>
+                    ))}
+                </div>
+                
+                {isLoggedIn && (
+                    <button 
+                        onClick={handleLogout}
+                        style={{
+                            margin: '20px',
+                            padding: '12px',
+                            background: 'rgba(231, 76, 60, 0.15)',
+                            color: '#ff7675',
+                            border: '1px solid rgba(231, 76, 60, 0.2)',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            transition: 'var(--transition-fast)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                        }}
                     >
-                        <span style={{ marginRight: '10px' }}>{link.icon}</span>
-                        {link.label}
-                    </NavLink>
-                ))}
-            </div>
-            
-            <button 
-                onClick={handleLogout}
-                style={{
-                    margin: '20px',
-                    padding: '12px',
-                    background: '#e74c3c',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 'bold'
-                }}
-            >
-                🚪 Logout
-            </button>
-        </aside>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        Logout
+                    </button>
+                )}
+            </aside>
+        </>
     );
 };
 

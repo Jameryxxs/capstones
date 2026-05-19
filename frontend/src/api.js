@@ -60,3 +60,4 @@ export const priceApi = {
 };
 
 export default api;
+

@@ -1,91 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
 import Card from '../components/Card';
-import Table from '../components/Table';
 import axios from 'axios';
-
-// Fix Leaflet icon issue
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import Table from '../components/Table';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Supply = () => {
     const [locations, setLocations] = useState([]);
-    const [sources, setSources] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [locRes, srcRes] = await Promise.all([
-                    axios.get('http://127.0.0.1:8000/api/locations/'),
-                    axios.get('http://127.0.0.1:8000/api/supply-sources/')
-                ]);
-                setLocations(locRes.data);
-                setSources(srcRes.data);
-            } catch (err) {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+
+        axios.get('http://127.0.0.1:8000/api/locations/')
+            .then(res => {
+                setLocations(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
                 console.error(err);
-            }
-        };
-        fetchData();
+                setLoading(false);
+            });
+
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Center on Lucena Fish Port
-    const lucenaPos = [13.9189, 121.6212];
+    const columns = [
+        { header: 'Fishing Ground', accessor: 'location_name' },
+        { header: 'Region', accessor: 'region' },
+        { header: 'Province', accessor: 'province' },
+    ];
+
+    if (loading) return <LoadingSpinner size="60px" />;
 
     return (
-        <div>
+        <div className="page-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h1 style={{ color: '#1a2a6c' }}>Supply Source Identification</h1>
-                <p style={{ color: '#666' }}>Mapping fish origins for the Lucena Fish Port Complex</p>
+                <h1 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.5rem' : '2rem' }}>Supply Sources</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Tracking the geographic origin of Lucena Fish Port arrivals</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                <Card title="Supply Source Map">
-                    <div style={{ height: '500px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
-                        <MapContainer center={lucenaPos} zoom={8} style={{ height: '100%', width: '100%' }}>
-                            <TileLayer
-                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            />
-                            <Marker position={lucenaPos}>
-                                <Popup><strong>Lucena Fish Port Complex</strong><br/>Central Monitoring Hub</Popup>
-                            </Marker>
-                            {locations.map(loc => (
-                                <Marker key={loc.id} position={[loc.latitude, loc.longitude]}>
-                                    <Popup>
-                                        <strong>{loc.location_name}</strong><br/>
-                                        Region: {loc.region}<br/>
-                                        {loc.description}
-                                    </Popup>
-                                </Marker>
-                            ))}
-                        </MapContainer>
-                    </div>
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', 
+                gap: '20px' 
+            }}>
+                <Card title="Active Locations">
+                    <Table 
+                        columns={columns} 
+                        data={locations} 
+                    />
                 </Card>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <Card title="Active Suppliers">
-                        <Table 
-                            headers={['Supplier', 'Boat Name']} 
-                            data={sources}
-                            renderRow={(item) => (
-                                <>
-                                    <td style={{ padding: '10px' }}>{item.supplier_name}</td>
-                                    <td style={{ padding: '10px' }}>{item.boat_name}</td>
-                                </>
-                            )}
-                        />
-                    </Card>
-                    <Card title="Location Summary">
-                        <p style={{ fontSize: '0.9rem' }}>
-                            Currently monitoring <strong>{locations.length}</strong> fishing grounds across the region.
+                <Card title="Origin Summary" style={{ background: 'rgba(52, 152, 219, 0.05)', border: 'none' }}>
+                    <div style={{ padding: '10px' }}>
+                        <h4 style={{ color: 'var(--primary-navy)', margin: '0 0 10px 0' }}>Data Coverage</h4>
+                        <p style={{ fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--text-main)' }}>
+                            Monitoring <strong>{locations.length}</strong> major fishing grounds across Luzon and Visayas. 
+                            Select a location from the table to see detailed arrival logs.
                         </p>
-                    </Card>
-                </div>
+                        <div style={{ marginTop: '20px', padding: '15px', background: '#fff', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>TOP REGION</span>
+                            <p style={{ margin: '5px 0 0', fontWeight: 'bold', color: 'var(--secondary-blue)' }}>CALABARZON (Region IV-A)</p>
+                        </div>
+                    </div>
+                </Card>
             </div>
         </div>
     );
