@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api';
 import Card from '../components/Card';
 import axios from 'axios';
 import { 
@@ -28,7 +29,7 @@ const Analytics = () => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
 
-        axios.get('http://127.0.0.1:8000/api/fish/')
+        api.get('fish/')
             .then(res => {
                 setFishes(res.data);
                 if (res.data.length > 0) setSelectedFish(res.data[0].id);
@@ -40,7 +41,7 @@ const Analytics = () => {
             });
             
         // Load global analytics
-        axios.get('http://127.0.0.1:8000/api/supplier-performance/')
+        api.get('supplier-performance/')
             .then(res => setSupplierData(res.data));
 
         return () => window.removeEventListener('resize', handleResize);
@@ -67,7 +68,7 @@ const Analytics = () => {
             return;
         }
 
-        axios.get(`http://127.0.0.1:8000/api/${endpoint}`)
+        api.get(`${endpoint}`)
             .then(res => {
                 if (activeTab === 'forecast') {
                     setForecastData(res.data.map(item => ({
@@ -91,7 +92,7 @@ const Analytics = () => {
         if (selectedCompare.length < 2) return;
         setLoading(true);
         const params = selectedCompare.map(id => `ids=${id}`).join('&');
-        axios.get(`http://127.0.0.1:8000/api/compare-prices/?${params}`)
+        api.get(`compare-prices/?${params}`)
             .then(res => {
                 setCompareData(res.data);
                 setLoading(false);

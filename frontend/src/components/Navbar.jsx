@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 
 const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
     const [unreadCount, setUnreadCount] = useState(0);
@@ -10,9 +10,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
             const token = localStorage.getItem('access_token');
             if (!token) return;
 
-            axios.get('http://127.0.0.1:8000/api/notifications/', {
-                headers: { Authorization: `Bearer ${token}` }
-            })
+            api.get('notifications/')
             .then(res => {
                 const unread = res.data.filter(n => !n.is_read).length;
                 setUnreadCount(unread);

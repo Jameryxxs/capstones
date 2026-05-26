@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import Card from '../components/Card';
 
 const Register = () => {
@@ -21,7 +21,7 @@ const Register = () => {
         setLoading(true);
         setError('');
         try {
-            await axios.post('http://127.0.0.1:8000/api/auth/register/', formData);
+            await api.post('auth/register/', formData);
             navigate('/login');
         } catch (err) {
             setError('Registration failed. Username or email might already exist.');

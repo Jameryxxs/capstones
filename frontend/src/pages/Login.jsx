@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import Card from '../components/Card';
 
 const Login = () => {
@@ -15,7 +15,7 @@ const Login = () => {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.post('http://127.0.0.1:8000/api/auth/login/', { username, password });
+            const res = await api.post('auth/login/', { username, password });
             localStorage.setItem('access_token', res.data.access);
             localStorage.setItem('refresh_token', res.data.refresh);
             navigate('/dashboard');

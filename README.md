@@ -26,10 +26,10 @@ A Progressive Web App Up-to-Date Fish Market Monitoring System with Retailer Inf
     ```
 5.  **Start the Server**:
     ```bash
-    python manage.py runserver
+    python manage.py runserver 0.0.0.0:8000
     ```
-    *   The API will be live at: `http://127.0.0.1:8000/`
-    *   Admin Panel: `http://127.0.0.1:8000/admin/` (Login: `admin` / `admin123`)
+    *   The API will be live at: `http://192.168.18.167:8000/` (Local IP)
+    *   Admin Panel: `http://192.168.18.167:8000/admin/`
 
 ---
 
@@ -48,6 +48,7 @@ A Progressive Web App Up-to-Date Fish Market Monitoring System with Retailer Inf
     npm start
     ```
     *   The app will open at: `http://localhost:3000`
+    *   **Mobile Testing**: Access via `http://192.168.18.167:3000` on your phone.
 
 ---
 

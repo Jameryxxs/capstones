@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
-import axios from 'axios';
+import api from '../api';
 import Table from '../components/Table';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -13,7 +13,7 @@ const Supply = () => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
 
-        axios.get('http://127.0.0.1:8000/api/locations/')
+        api.get('locations/')
             .then(res => {
                 setLocations(res.data);
                 setLoading(false);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
-import axios from 'axios';
+import api from '../api';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Reports = () => {
@@ -13,7 +13,7 @@ const Reports = () => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
 
-        axios.get('http://127.0.0.1:8000/api/reports/')
+        api.get('reports/')
             .then(res => {
                 setReports(res.data);
                 setLoading(false);
@@ -28,9 +28,7 @@ const Reports = () => {
 
     const downloadBulletin = () => {
         setDownloading(true);
-        axios({
-            url: 'http://127.0.0.1:8000/api/bulletin/',
-            method: 'GET',
+        api.get('bulletin/', {
             responseType: 'blob',
         }).then((response) => {
             const url = window.URL.createObjectURL(new Blob([response.data]));

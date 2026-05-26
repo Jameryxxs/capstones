@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api';
 import Card from '../components/Card';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -22,8 +23,8 @@ const Dashboard = () => {
         const fetchData = async () => {
             try {
                 const [statsRes, weatherRes] = await Promise.all([
-                    axios.get('http://127.0.0.1:8000/api/dashboard-stats/'),
-                    axios.get('http://127.0.0.1:8000/api/weather/')
+                    api.get('dashboard-stats/'),
+                    api.get('weather/')
                 ]);
                 setStats(statsRes.data);
                 setWeather(weatherRes.data);

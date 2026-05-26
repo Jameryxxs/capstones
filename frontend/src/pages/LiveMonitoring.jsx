@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../api';
 import Card from '../components/Card';
 import axios from 'axios';
 import { 
@@ -43,9 +44,9 @@ const LiveMonitoring = () => {
             setLoading(true);
             try {
                 const [statsRes, weatherRes, mapRes] = await Promise.all([
-                    axios.get(`http://127.0.0.1:8000/api/dashboard-stats/?category=${category}`),
-                    axios.get('http://127.0.0.1:8000/api/weather/'),
-                    axios.get('http://127.0.0.1:8000/api/map-data/')
+                    api.get(`dashboard-stats/?category=${category}`),
+                    api.get('weather/'),
+                    api.get('map-data/')
                 ]);
                 setStats(statsRes.data);
                 setWeather(weatherRes.data);
