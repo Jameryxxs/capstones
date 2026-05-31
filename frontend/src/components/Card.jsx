@@ -6,26 +6,38 @@ const Card = ({ title, children, style, interactive }) => {
       className={interactive ? 'interactive-card' : ''}
       style={{
         background: 'var(--bg-card)',
-        borderRadius: 'var(--radius-md)',
-        padding: '25px',
-        boxShadow: 'var(--shadow-sm)',
-        border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '24px',
+        boxShadow: 'var(--shadow-command)',
+        border: '1px solid var(--border-industrial)',
         height: 'fit-content',
         position: 'relative',
         overflow: 'hidden',
         ...style
       }}
     >
+      {/* Decorative Corner Element */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        width: '12px',
+        height: '12px',
+        borderRight: '2px solid var(--accent-cyan)',
+        borderTop: '2px solid var(--accent-cyan)',
+        opacity: 0.4
+      }}></div>
+
       {title && (
         <h3 style={{ 
           margin: '0 0 20px 0', 
-          fontSize: '1rem', 
+          fontSize: '0.8rem', 
           fontWeight: '700', 
-          color: 'var(--primary-navy)',
+          color: 'var(--text-accent)',
           textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-          borderBottom: '2px solid var(--bg-main)',
-          paddingBottom: '10px'
+          letterSpacing: '1.5px',
+          borderLeft: '3px solid var(--accent-cyan)',
+          paddingLeft: '12px'
         }}>
           {title}
         </h3>

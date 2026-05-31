@@ -64,44 +64,56 @@ import json
 import urllib.request
 from django.conf import settings
 
+from django.core.cache import cache
+
 @api_view(['GET'])
 def get_weather(request):
+    # Try to get from cache first
+    cached_weather = cache.get('lucena_weather')
+    if cached_weather:
+        return Response(cached_weather)
+
     # Lucena City Coordinates
     lat = 13.9413
     lon = 121.6212
     api_key = getattr(settings, 'OPENWEATHER_API_KEY', None)
     
-    if not api_key:
-        # Fallback Mock Data
-        return Response({
-            "city": "Lucena City",
-            "temp": 29.5,
-            "description": "Partly Cloudy",
-            "icon": "03d",
-            "humidity": 78,
-            "wind_speed": 4.2,
-            "is_mock": True
-        })
+    weather_data = {
+        "city": "Lucena City",
+        "temp": 29.5,
+        "description": "Partly Cloudy",
+        "icon": "03d",
+        "humidity": 78,
+        "wind_speed": 4.2,
+        "is_mock": True
+    }
+
+    if api_key:
+        try:
+            url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+            with urllib.request.urlopen(url) as response:
+                data = json.loads(response.read().decode())
+                weather_data = {
+                    "city": data['name'],
+                    "temp": data['main']['temp'],
+                    "description": data['weather'][0]['description'].capitalize(),
+                    "icon": data['weather'][0]['icon'],
+                    "humidity": data['main']['humidity'],
+                    "wind_speed": data['wind']['speed'],
+                    "is_mock": False
+                }
+        except Exception as e:
+            pass
     
-    try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-        with urllib.request.urlopen(url) as response:
-            data = json.loads(response.read().decode())
-            return Response({
-                "city": data['name'],
-                "temp": data['main']['temp'],
-                "description": data['weather'][0]['description'].capitalize(),
-                "icon": data['weather'][0]['icon'],
-                "humidity": data['main']['humidity'],
-                "wind_speed": data['wind']['speed'],
-                "is_mock": False
-            })
-    except Exception as e:
-        return Response({"error": "Failed to fetch weather"}, status=500)
+    # Cache for 15 minutes
+    cache.set('lucena_weather', weather_data, 900)
+    return Response(weather_data)
 
 @api_view(['GET'])
 def get_dashboard_stats(request):
     category = request.GET.get('category')
+    today = date.today()
+    seven_days_ago = today - timedelta(days=7)
     
     fish_queryset = Fish.objects.all()
     if category and category != 'all':
@@ -109,35 +121,30 @@ def get_dashboard_stats(request):
     
     total_fish = fish_queryset.count()
     active_retailers = Retailer.objects.filter(status='Active').count()
-    today = date.today()
     
-    # Filter related models by category if specified
     relevant_fish_ids = fish_queryset.values_list('id', flat=True)
     
-    # Price Trends (Last 7 Days)
-    price_trends = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        avg = FishPrice.objects.filter(
-            market_date=day, 
-            fish_id__in=relevant_fish_ids
-        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg'] or 0
-        price_trends.append({"date": day.strftime('%m/%d'), "price": round(float(avg), 2)})
+    # Optimized Price Trends - ONE QUERY
+    price_data = FishPrice.objects.filter(
+        market_date__gte=seven_days_ago,
+        fish_id__in=relevant_fish_ids
+    ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('market_date')
     
-    # Supply Volume Trends (Last 7 Days)
-    supply_trends = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        total_qty = FishDelivery.objects.filter(
-            delivery_date=day, 
-            delivery_status='delivered',
-            fish_id__in=relevant_fish_ids
-        ).aggregate(Sum('quantity'))['quantity__sum'] or 0
-        supply_trends.append({"date": day.strftime('%m/%d'), "volume": total_qty})
+    price_trends = [{"date": p['market_date'].strftime('%m/%d'), "price": round(float(p['avg_price']), 2)} for p in price_data]
+    
+    # Optimized Supply Trends - ONE QUERY
+    supply_data = FishDelivery.objects.filter(
+        delivery_date__gte=seven_days_ago,
+        delivery_status='delivered',
+        fish_id__in=relevant_fish_ids
+    ).values('delivery_date').annotate(total_qty=Sum('quantity')).order_by('delivery_date')
+    
+    supply_trends = [{"date": s['delivery_date'].strftime('%m/%d'), "volume": s['total_qty']} for s in supply_data]
         
     # Category Distribution
-    cat_dist = [{"name": c['category'], "value": Fish.objects.filter(category=c['category']).count()} 
-                for c in Fish.objects.values('category').annotate(count=Avg('id'))]
+    cat_dist = list(Fish.objects.values('category').annotate(value=Count('id')))
+    for item in cat_dist:
+        item['name'] = item.pop('category')
     
     # Top Species by Volume (Last 30 Days)
     thirty_days_ago = today - timedelta(days=30)
@@ -145,38 +152,25 @@ def get_dashboard_stats(request):
         delivery_date__gte=thirty_days_ago, 
         delivery_status='delivered',
         fish_id__in=relevant_fish_ids
-    ).values('fish__fish_name').annotate(total_volume=Sum('quantity')).order_by('-total_volume')[:5]
+    ).values('fish__fish_name').annotate(volume=Sum('quantity')).order_by('-volume')[:5]
     
-    top_species_list = [{"name": s['fish__fish_name'], "volume": s['total_volume']} for s in top_species]
+    top_species_list = [{"name": s['fish__fish_name'], "volume": s['volume']} for s in top_species]
 
-    # --- NEW: Anomaly Detection (Simple) ---
+    # Optimized Alerts - Bulk check
     alerts = []
     yesterday = today - timedelta(days=1)
-    for fish_id in relevant_fish_ids[:10]: # Check top 10 for performance
-        fish = Fish.objects.get(id=fish_id)
-        p_today = FishPrice.objects.filter(fish_id=fish_id, market_date=today).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
-        p_yest = FishPrice.objects.filter(fish_id=fish_id, market_date=yesterday).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
-        
-        if p_today and p_yest:
-            change = (float(p_today) - float(p_yest)) / float(p_yest)
-            if abs(change) > 0.15:
-                alerts.append({
-                    "type": "price",
-                    "severity": "high" if change > 0 else "medium",
-                    "message": f"Price for {fish.fish_name} {'spiked' if change > 0 else 'dropped'} by {abs(round(change*100))}%"
-                })
+    
+    # Simple supply drop check
+    if len(supply_trends) >= 2:
+        vol_today = supply_trends[-1]['volume'] if supply_trends[-1]['date'] == today.strftime('%m/%d') else 0
+        vol_avg = sum(s['volume'] for s in supply_trends[:-1]) / (len(supply_trends)-1)
+        if vol_today < vol_avg * 0.5 and vol_avg > 0:
+            alerts.append({
+                "type": "supply",
+                "severity": "high",
+                "message": "Supply volume today is 50% below weekly average!"
+            })
 
-    # Supply drop alert
-    vol_today = supply_trends[-1]['volume']
-    vol_avg = sum(s['volume'] for s in supply_trends[:-1]) / 6 if len(supply_trends) > 1 else 0
-    if vol_today < vol_avg * 0.5 and vol_avg > 0:
-        alerts.append({
-            "type": "supply",
-            "severity": "high",
-            "message": f"Supply volume today is 50% below weekly average!"
-        })
-
-    # --- NEW: Market Sentiment ---
     sentiment = "Stable"
     if len(price_trends) >= 2:
         recent_change = price_trends[-1]['price'] - price_trends[-2]['price']
@@ -199,7 +193,10 @@ def get_map_data(request):
     # Locations with recent delivery volumes
     seven_days_ago = date.today() - timedelta(days=7)
     locations = FishingLocation.objects.all()
-    map_data = []
+    map_data = {
+        "locations": [],
+        "boats": []
+    }
     
     for loc in locations:
         volume = FishDelivery.objects.filter(
@@ -209,12 +206,26 @@ def get_map_data(request):
         ).aggregate(Sum('quantity'))['quantity__sum'] or 0
         
         if volume > 0:
-            map_data.append({
+            map_data["locations"].append({
                 "id": loc.id,
                 "name": loc.location_name,
                 "lat": float(loc.latitude),
                 "lng": float(loc.longitude),
                 "volume": volume
+            })
+    
+    # Active boats (In Transit or At Sea)
+    active_boats = SupplySource.objects.filter(status__in=['in_transit', 'at_sea'])
+    for boat in active_boats:
+        if boat.current_lat and boat.current_lng:
+            map_data["boats"].append({
+                "id": boat.id,
+                "name": boat.boat_name,
+                "supplier": boat.supplier_name,
+                "lat": float(boat.current_lat),
+                "lng": float(boat.current_lng),
+                "status": boat.status,
+                "origin": boat.fishing_location.location_name
             })
             
     return Response(map_data)
@@ -344,6 +355,20 @@ class FishingLocationViewSet(viewsets.ModelViewSet):
 class SupplySourceViewSet(viewsets.ModelViewSet):
     queryset = SupplySource.objects.all()
     serializer_class = SupplySourceSerializer
+
+    @action(detail=True, methods=['post'])
+    def update_location(self, request, pk=None):
+        boat = self.get_object()
+        lat = request.data.get('lat')
+        lng = request.data.get('lng')
+        status = request.data.get('status')
+        
+        if lat: boat.current_lat = lat
+        if lng: boat.current_lng = lng
+        if status: boat.status = status
+        
+        boat.save()
+        return Response({"status": "Location updated"})
 
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()

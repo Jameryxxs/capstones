@@ -108,8 +108,12 @@ const Analytics = () => {
     return (
         <div className="page-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h1 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.5rem' : '2rem' }}>Advanced Port Analytics</h1>
-                <p style={{ color: 'var(--text-muted)' }}>Market Trends & Supply Chain Insights</p>
+                <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: isMobile ? '1.5rem' : '2rem', letterSpacing: '2px' }}>
+                    DATA_ANALYSIS // <span style={{ color: 'var(--accent-cyan)' }}>INSIGHTS</span>
+                </h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    Market Correlations & Predictive Forecasting
+                </p>
             </div>
 
             {/* Navigation Tabs - Scrollable on mobile */}
@@ -128,18 +132,21 @@ const Analytics = () => {
                         onClick={() => setActiveTab(tab)}
                         style={{
                             padding: '10px 20px',
-                            borderRadius: '25px',
-                            border: 'none',
-                            background: activeTab === tab ? 'var(--primary-navy)' : 'var(--bg-card)',
-                            color: activeTab === tab ? '#fff' : 'var(--text-muted)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: activeTab === tab ? '1px solid var(--accent-cyan)' : '1px solid var(--border-industrial)',
+                            background: activeTab === tab ? 'rgba(100, 255, 218, 0.1)' : 'transparent',
+                            color: activeTab === tab ? 'var(--accent-cyan)' : 'var(--text-muted)',
                             cursor: 'pointer',
-                            fontWeight: '600',
+                            fontWeight: '800',
+                            textTransform: 'uppercase',
+                            fontSize: '0.75rem',
+                            letterSpacing: '1px',
                             transition: 'all 0.3s ease',
                             whiteSpace: 'nowrap',
-                            boxShadow: activeTab === tab ? 'var(--shadow-md)' : 'var(--shadow-sm)'
+                            boxShadow: activeTab === tab ? '0 0 10px rgba(100, 255, 218, 0.2)' : 'none'
                         }}
                     >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1).replace('-', ' ')}
+                        {tab.replace('-', '_')}
                     </button>
                 ))}
             </div>
@@ -217,46 +224,46 @@ const Analytics = () => {
                                     <AreaChart data={forecastData}>
                                         <defs>
                                             <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="var(--success-green)" stopOpacity={0.8}/>
-                                                <stop offset="95%" stopColor="var(--success-green)" stopOpacity={0}/>
+                                                <stop offset="5%" stopColor="var(--accent-cyan)" stopOpacity={0.4}/>
+                                                <stop offset="95%" stopColor="var(--accent-cyan)" stopOpacity={0}/>
                                             </linearGradient>
                                         </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                        <YAxis tick={{ fontSize: 10 }} />
-                                        <Tooltip />
-                                        <Area type="monotone" dataKey="price" stroke="var(--success-green)" fill="url(#colorPrice)" />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Area type="monotone" dataKey="price" stroke="var(--accent-cyan)" fill="url(#colorPrice)" strokeWidth={3} />
                                     </AreaChart>
                                 ) : activeTab === 'correlation' && correlationData.length > 0 ? (
                                     <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 10 }}>
-                                        <CartesianGrid />
-                                        <XAxis type="number" dataKey="supply" name="Supply" unit="kg" tick={{ fontSize: 10 }} />
-                                        <YAxis type="number" dataKey="price" name="Price" unit="₱" tick={{ fontSize: 10 }} />
+                                        <CartesianGrid stroke="var(--border-industrial)" />
+                                        <XAxis type="number" dataKey="supply" name="Supply" unit="kg" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <YAxis type="number" dataKey="price" name="Price" unit="₱" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <ZAxis type="number" range={[64, 144]} />
-                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                                        <Scatter name="Market Data" data={correlationData} fill="var(--secondary-blue)" />
+                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Scatter name="Market Data" data={correlationData} fill="var(--accent-cyan)" />
                                     </ScatterChart>
                                 ) : activeTab === 'seasonality' && seasonalityData.length > 0 ? (
                                     <BarChart data={seasonalityData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                                        <YAxis tick={{ fontSize: 10 }} />
-                                        <Tooltip />
-                                        <Bar dataKey="volume" fill="var(--primary-navy)" radius={[4, 4, 0, 0]} />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
+                                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Bar dataKey="volume" fill="var(--accent-cyan)" radius={[2, 2, 0, 0]} />
                                     </BarChart>
                                 ) : activeTab === 'comparison' && compareData.length > 0 ? (
                                     <LineChart data={compareData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                                        <YAxis tick={{ fontSize: 10 }} />
-                                        <Tooltip />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-industrial)" />
+                                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
                                         {!isMobile && <Legend />}
                                         {Object.keys(compareData[0] || {}).filter(k => k !== 'date').map((key, i) => (
                                             <Line 
                                                 key={key} 
                                                 type="monotone" 
                                                 dataKey={key} 
-                                                stroke={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'][i % 5]} 
+                                                stroke={['#64ffda', '#48dbfb', '#ff9f43', '#ff6b6b', '#a29bfe'][i % 5]} 
                                                 strokeWidth={3} 
                                                 dot={false}
                                             />
@@ -264,15 +271,15 @@ const Analytics = () => {
                                     </LineChart>
                                 ) : activeTab === 'suppliers' && supplierData.length > 0 ? (
                                     <BarChart data={supplierData} layout="vertical" margin={{ left: isMobile ? 10 : 50 }}>
-                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                        <XAxis type="number" tick={{ fontSize: 10 }} />
-                                        <YAxis dataKey="location" type="category" tick={{ fontSize: 10 }} width={isMobile ? 80 : 120} />
-                                        <Tooltip />
-                                        <Bar dataKey="volume" fill="var(--success-green)" name="Volume (kg)" />
+                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-industrial)" />
+                                        <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
+                                        <YAxis dataKey="location" type="category" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} width={isMobile ? 80 : 120} />
+                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Bar dataKey="volume" fill="var(--accent-cyan)" name="Volume (kg)" radius={[0, 2, 2, 0]} />
                                     </BarChart>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                                        <p style={{ fontSize: '0.9rem' }}>No data available.</p>
+                                        <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>NO_DATA_POINT_FOUND</p>
                                     </div>
                                 )}
                             </ResponsiveContainer>

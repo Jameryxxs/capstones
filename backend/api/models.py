@@ -102,6 +102,12 @@ class FishingLocation(models.Model):
 # =====================================================
 
 class SupplySource(models.Model):
+    STATUS_CHOICES = (
+        ('at_sea', 'At Sea'),
+        ('in_transit', 'In Transit'),
+        ('docked', 'Docked'),
+    )
+
     supplier_name = models.CharField(max_length=255)
     boat_name = models.CharField(max_length=255)
     fishing_location = models.ForeignKey(
@@ -109,6 +115,9 @@ class SupplySource(models.Model):
         on_delete=models.CASCADE
     )
     contact_number = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='at_sea')
+    current_lat = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    current_lng = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     arrival_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
 

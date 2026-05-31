@@ -26,8 +26,8 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
     return (
         <nav style={{ 
             height: '60px', 
-            background: 'var(--bg-card)', 
-            borderBottom: '1px solid var(--border-light)', 
+            background: 'var(--bg-sidebar)', 
+            borderBottom: '1px solid var(--border-industrial)', 
             display: 'flex', 
             alignItems: 'center', 
             padding: isMobile ? '0 15px' : '0 30px',
@@ -36,7 +36,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
             left: 0,
             right: 0,
             zIndex: 1000,
-            boxShadow: 'var(--shadow-sm)'
+            boxShadow: 'var(--shadow-command)'
         }}>
             {/* Hamburger Menu for Mobile/Tablet */}
             {isMobile && !isAuthPage && (
@@ -45,7 +45,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
                     style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'var(--primary-navy)',
+                        color: 'var(--accent-cyan)',
                         cursor: 'pointer',
                         marginRight: '15px',
                         display: 'flex',
@@ -58,26 +58,33 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
             )}
 
             <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                <h2 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.1rem' : '1.4rem', letterSpacing: '-0.5px' }}>
-                    Fish<span style={{ color: 'var(--secondary-blue)' }}>Lodger</span>
+                <h2 style={{ 
+                    margin: 0, 
+                    color: 'var(--text-main)', 
+                    fontSize: isMobile ? '1.1rem' : '1.3rem', 
+                    letterSpacing: '2px',
+                    fontWeight: '800',
+                    textTransform: 'uppercase'
+                }}>
+                    Fish<span style={{ color: 'var(--accent-cyan)' }}>Lodger</span>
                 </h2>
             </Link>
             
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '20px' }}>
                 {!isAuthPage && (
                     <div style={{ position: 'relative', cursor: 'pointer', opacity: 0.8 }}>
-                        <span style={{ fontSize: isMobile ? '1.1rem' : '1.4rem' }}>🔔</span>
+                        <span style={{ fontSize: isMobile ? '1.1rem' : '1.4rem', color: 'var(--accent-cyan)' }}>🔔</span>
                         {unreadCount > 0 && (
                             <span style={{ 
                                 position: 'absolute', 
                                 top: '-5px', 
                                 right: '-5px', 
-                                background: 'var(--danger-red)', 
-                                color: 'white', 
-                                borderRadius: '50%', 
-                                padding: '2px 4px', 
-                                fontSize: '0.6rem',
-                                fontWeight: 'bold'
+                                background: 'var(--safety-orange)', 
+                                color: 'var(--primary-navy)', 
+                                borderRadius: 'var(--radius-sm)', 
+                                padding: '1px 5px', 
+                                fontSize: '0.65rem',
+                                fontWeight: '900'
                             }}>
                                 {unreadCount}
                             </span>
@@ -87,20 +94,22 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
 
                 {!localStorage.getItem('access_token') ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '20px' }}>
-                        <Link to="/login" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontWeight: '500', fontSize: '0.9rem' }}>Login</Link>
+                        <Link to="/login" style={{ textDecoration: 'none', color: 'var(--text-muted)', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Login</Link>
                         <Link to="/register" style={{ 
                             textDecoration: 'none', 
-                            color: '#fff', 
-                            background: 'var(--secondary-blue)', 
-                            padding: isMobile ? '6px 12px' : '10px 20px', 
+                            color: 'var(--primary-navy)', 
+                            background: 'var(--accent-cyan)', 
+                            padding: isMobile ? '6px 12px' : '8px 16px', 
                             borderRadius: 'var(--radius-sm)',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
+                            fontWeight: '800',
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px'
                         }}>Register</Link>
                     </div>
                 ) : (
-                    <div style={{ color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '500', display: isMobile ? 'none' : 'block' }}>
-                        Welcome back!
+                    <div style={{ color: 'var(--accent-cyan)', fontSize: '0.7rem', fontWeight: '800', display: isMobile ? 'none' : 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        SYSTEM_ONLINE // {localStorage.getItem('username') || 'ADMIN'}
                     </div>
                 )}
             </div>

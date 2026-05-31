@@ -75,8 +75,8 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
 
             <aside style={{ 
                 width: '240px', 
-                background: 'var(--primary-navy)', 
-                color: '#fff', 
+                background: 'var(--bg-sidebar)', 
+                color: 'var(--text-main)', 
                 height: '100vh', 
                 position: 'fixed', 
                 top: 0, 
@@ -85,7 +85,8 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 900,
-                boxShadow: 'var(--shadow-md)',
+                borderRight: '1px solid var(--border-industrial)',
+                boxShadow: 'var(--shadow-command)',
                 transition: 'left 0.3s ease'
             }}>
                 <div style={{ flex: 1 }}>
@@ -97,17 +98,29 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                                 display: 'flex',
                                 alignItems: 'center',
                                 padding: '14px 24px',
-                                color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                                color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
                                 textDecoration: 'none',
-                                borderLeft: isActive ? '4px solid var(--secondary-blue)' : '4px solid transparent',
-                                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                                fontSize: '0.9rem',
-                                fontWeight: isActive ? '600' : '400',
+                                borderRight: isActive ? '3px solid var(--accent-cyan)' : '3px solid transparent',
+                                background: isActive ? 'rgba(100, 255, 218, 0.05)' : 'transparent',
+                                fontSize: '0.8rem',
+                                fontWeight: isActive ? '800' : '400',
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
                                 transition: 'var(--transition-fast)'
                             })}
                         >
-                            <span style={{ marginRight: '12px', display: 'flex', alignItems: 'center', opacity: 0.8 }}>{link.icon}</span>
-                            {link.label}
+                            {({ isActive }) => (
+                                <>
+                                    <span style={{ 
+                                        marginRight: '12px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                                        opacity: isActive ? 1 : 0.6 
+                                    }}>{link.icon}</span>
+                                    {link.label}
+                                </>
+                            )}
                         </NavLink>
                     ))}
                 </div>
@@ -118,12 +131,15 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                         style={{
                             margin: '20px',
                             padding: '12px',
-                            background: 'rgba(231, 76, 60, 0.15)',
-                            color: '#ff7675',
-                            border: '1px solid rgba(231, 76, 60, 0.2)',
+                            background: 'transparent',
+                            color: 'var(--danger-red)',
+                            border: '1px solid var(--danger-red)',
                             borderRadius: 'var(--radius-sm)',
                             cursor: 'pointer',
-                            fontWeight: 'bold',
+                            fontWeight: '800',
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px',
                             transition: 'var(--transition-fast)',
                             display: 'flex',
                             alignItems: 'center',
@@ -132,7 +148,7 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                         }}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        Logout
+                        Term_Session
                     </button>
                 )}
             </aside>

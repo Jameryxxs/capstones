@@ -31,7 +31,7 @@ const LiveMonitoring = () => {
         sentiment: 'Stable'
     });
     const [weather, setWeather] = useState(null);
-    const [mapData, setMapData] = useState([]);
+    const [mapData, setMapData] = useState({ locations: [], boats: [] });
     const [loading, setLoading] = useState(true);
     const [category, setCategory] = useState('all');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -78,15 +78,19 @@ const LiveMonitoring = () => {
                 gap: '15px'
             }}>
                 <div>
-                    <h1 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.5rem' : '2rem' }}>Live Market Insights</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Monitoring & Geographic Supply Tracking</p>
+                    <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: isMobile ? '1.5rem' : '2rem', letterSpacing: '2px' }}>
+                        LIVE_INTEL // <span style={{ color: 'var(--accent-cyan)' }}>MONITORING</span>
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Geographic Supply Tracking & Anomaly Detection
+                    </p>
                 </div>
                 <div style={{ 
                     display: 'flex', 
-                    background: 'var(--bg-main)', 
+                    background: 'var(--secondary-blue)', 
                     padding: '4px', 
-                    borderRadius: '30px', 
-                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-sm)', 
+                    border: '1px solid var(--border-industrial)',
                     width: isMobile ? '100%' : 'auto',
                     overflowX: 'auto'
                 }}>
@@ -97,14 +101,16 @@ const LiveMonitoring = () => {
                             style={{
                                 flex: isMobile ? 1 : 'none',
                                 padding: '8px 16px',
-                                borderRadius: '25px',
+                                borderRadius: 'var(--radius-sm)',
                                 border: 'none',
-                                background: category === cat ? 'var(--primary-navy)' : 'transparent',
-                                color: category === cat ? '#fff' : 'var(--text-muted)',
+                                background: category === cat ? 'var(--accent-cyan)' : 'transparent',
+                                color: category === cat ? 'var(--primary-navy)' : 'var(--text-muted)',
                                 cursor: 'pointer',
-                                fontWeight: '600',
+                                fontWeight: '800',
                                 transition: 'all 0.3s ease',
-                                textTransform: 'capitalize',
+                                textTransform: 'uppercase',
+                                fontSize: '0.75rem',
+                                letterSpacing: '1px',
                                 whiteSpace: 'nowrap'
                             }}
                         >
@@ -120,22 +126,22 @@ const LiveMonitoring = () => {
                 gap: '20px', 
                 marginBottom: '30px' 
             }}>
-                <Card interactive style={{ borderLeft: '5px solid #28a745' }}>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>MARKET SENTIMENT</p>
-                    <h2 style={{ margin: '10px 0', fontSize: '1.4rem', color: 'var(--primary-navy)' }}>{stats.sentiment}</h2>
-                    <p style={{ margin: 0, color: 'var(--secondary-blue)', fontSize: '0.8rem', fontWeight: '500' }}>Next 24h Outlook</p>
+                <Card interactive style={{ borderTop: '4px solid var(--success-green)' }}>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>MARKET SENTIMENT</p>
+                    <h2 style={{ margin: '10px 0', fontSize: '1.4rem', color: 'var(--accent-cyan)' }}>{stats.sentiment}</h2>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '500' }}>Next 24h Outlook</p>
                 </Card>
-                <Card interactive style={{ borderLeft: '5px solid #ffc107' }}>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>DAILY IMPORT VOLUME</p>
-                    <h2 style={{ margin: '10px 0', fontSize: '2.2rem', color: 'var(--primary-navy)' }}>
-                        {stats.supply_trends.length > 0 ? stats.supply_trends[stats.supply_trends.length - 1].volume.toLocaleString() : 0} kg
+                <Card interactive style={{ borderTop: '4px solid var(--safety-orange)' }}>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>DAILY IMPORT VOLUME</p>
+                    <h2 style={{ margin: '10px 0', fontSize: '2.2rem', color: 'var(--text-main)' }}>
+                        {stats.supply_trends.length > 0 ? stats.supply_trends[stats.supply_trends.length - 1].volume.toLocaleString() : 0} KG
                     </h2>
-                    <p style={{ margin: 0, color: 'var(--success-green)', fontSize: '0.8rem', fontWeight: '500' }}>Live arrivals</p>
+                    <p style={{ margin: 0, color: 'var(--success-green)', fontSize: '0.75rem', fontWeight: 'bold' }}>✓ LIVE_ARRIVALS</p>
                 </Card>
-                <Card interactive style={{ borderLeft: '5px solid #007bff' }}>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700', textTransform: 'uppercase' }}>ACTIVE SPECIES</p>
-                    <h2 style={{ margin: '10px 0', fontSize: '2.2rem', color: 'var(--primary-navy)' }}>{stats.total_fish}</h2>
-                    <p style={{ margin: 0, color: 'var(--success-green)', fontSize: '0.8rem', fontWeight: '500' }}>Filtered view</p>
+                <Card interactive style={{ borderTop: '4px solid var(--accent-cyan)' }}>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>ACTIVE SPECIES</p>
+                    <h2 style={{ margin: '10px 0', fontSize: '2.2rem', color: 'var(--text-main)' }}>{stats.total_fish}</h2>
+                    <p style={{ margin: 0, color: 'var(--success-green)', fontSize: '0.75rem', fontWeight: 'bold' }}>✓ FILTERED_VIEW</p>
                 </Card>
             </div>
             
@@ -209,21 +215,50 @@ const LiveMonitoring = () => {
                     <div style={{ height: isMobile ? '300px' : '300px', borderRadius: '12px', overflow: 'hidden' }}>
                         <MapContainer center={[13.9, 121.7]} zoom={8} style={{ height: '100%', width: '100%' }}>
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                            {mapData.map(loc => (
+                            
+                            {/* Static Fishing Locations */}
+                            {mapData.locations?.map(loc => (
                                 <CircleMarker 
-                                    key={loc.id} 
+                                    key={`loc-${loc.id}`} 
                                     center={[loc.lat, loc.lng]} 
                                     radius={Math.sqrt(loc.volume) / 10}
-                                    fillColor="var(--success-green)"
+                                    fillColor="#7f8c8d"
                                     color="white"
                                     weight={1}
-                                    fillOpacity={0.6}
+                                    fillOpacity={0.4}
                                 >
                                     <Popup>
-                                        <strong>{loc.name}</strong><br/>
-                                        Volume: {loc.volume.toLocaleString()} kg
+                                        <strong>{loc.name} (Source)</strong><br/>
+                                        Total Volume: {loc.volume.toLocaleString()} kg
                                     </Popup>
                                 </CircleMarker>
+                            ))}
+
+                            {/* Active Boats In Transit */}
+                            {mapData.boats?.map(boat => (
+                                <Marker 
+                                    key={`boat-${boat.id}`} 
+                                    position={[boat.lat, boat.lng]}
+                                    icon={L.divIcon({
+                                        className: 'boat-icon',
+                                        html: `<div style="
+                                            font-size: 24px; 
+                                            transform: rotate(${boat.status === 'in_transit' ? '45deg' : '0deg'});
+                                            filter: drop-shadow(0 0 5px rgba(0,0,0,0.3));
+                                        ">🚢</div>`,
+                                        iconSize: [30, 30],
+                                        iconAnchor: [15, 15]
+                                    })}
+                                >
+                                    <Popup>
+                                        <div style={{ minWidth: '150px' }}>
+                                            <h4 style={{ margin: '0 0 5px' }}>{boat.name}</h4>
+                                            <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Status:</strong> <span style={{ color: boat.status === 'in_transit' ? 'var(--secondary-blue)' : 'var(--success-green)', fontWeight: 'bold' }}>{boat.status.replace('_', ' ').toUpperCase()}</span></p>
+                                            <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Supplier:</strong> {boat.supplier}</p>
+                                            <p style={{ margin: 0, fontSize: '0.8rem' }}><strong>Origin:</strong> {boat.origin}</p>
+                                        </div>
+                                    </Popup>
+                                </Marker>
                             ))}
                         </MapContainer>
                     </div>

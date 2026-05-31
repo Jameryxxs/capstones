@@ -1,6 +1,16 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://192.168.18.167:8000/api/";
+const getApiBaseUrl = () => {
+    const hostname = window.location.hostname;
+    // If we're on localhost or similar, assume the backend is also local
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+        return `http://${hostname}:8000/api/`;
+    }
+    // Fallback/Production URL
+    return `http://${hostname}:8000/api/`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -14,6 +24,22 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
+
+// Add response interceptor to handle 401 errors (Session Expired)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            // Clear local storage and redirect to login if not already there
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login?expired=true';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const authApi = {
     login: (credentials) => api.post("auth/login/", credentials),
