@@ -6,7 +6,7 @@ from .views import (
     FishPriceViewSet, FishingLocationViewSet, 
     SupplySourceViewSet, InventoryViewSet, 
     FishDeliveryViewSet, ReportViewSet, 
-    PredictionViewSet, NotificationViewSet,
+    PredictionViewSet, NotificationViewSet, BulletinViewSet,
     get_price_forecast, download_market_bulletin,
     RegisterView, get_dashboard_stats, MyTokenObtainPairView, get_weather,
     get_correlation_data, get_seasonality_data, get_supplier_performance, get_comparative_prices,
@@ -25,6 +25,7 @@ router.register('deliveries', FishDeliveryViewSet)
 router.register('reports', ReportViewSet)
 router.register('predictions', PredictionViewSet)
 router.register('notifications', NotificationViewSet)
+router.register('bulletins', BulletinViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

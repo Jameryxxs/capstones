@@ -248,3 +248,25 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# =====================================================
+# BULLETIN BOARD TABLE
+# =====================================================
+
+class Bulletin(models.Model):
+    CATEGORY_CHOICES = (
+        ('info', 'Information'),
+        ('urgent', 'Urgent Advisory'),
+        ('weather', 'Weather Warning'),
+    )
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='info')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title

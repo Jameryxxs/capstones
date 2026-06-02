@@ -8,7 +8,7 @@ from django.utils import timezone
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
-from api.models import Fish, Retailer, FishPrice, User, FishingLocation, SupplySource, Inventory, FishDelivery
+from api.models import Fish, Retailer, FishPrice, User, FishingLocation, SupplySource, Inventory, FishDelivery, Bulletin
 from django.db.models import Avg, Sum
 
 def generate_large_dataset():
@@ -19,7 +19,19 @@ def generate_large_dataset():
     if not user:
         user = User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
 
-    # 2. Fish Species with specific seasonal patterns (conceptual)
+    # 2. Bulletins
+    print("Seeding bulletins...")
+    bulletin_data = [
+        ("New Port Safety Guidelines", "All boat operators must wear safety vests starting next week.", "info"),
+        ("Red Tide Alert", "Shellfish harvesting is suspended in Lamon Bay until further notice.", "urgent"),
+        ("Heavy Rain Advisory", "Expected heavy rains in Lucena City tomorrow morning. Secure your stalls.", "weather"),
+        ("Price Cap on Galunggong", "DA has issued a suggested retail price for Galunggong at ₱180/kg.", "info"),
+        ("Port Maintenance Schedule", "Dock A will be closed for repairs on Friday, 10 PM.", "info"),
+    ]
+    for title, content, cat in bulletin_data:
+        Bulletin.objects.get_or_create(title=title, defaults={'content': content, 'category': cat})
+
+    # 3. Fish Species
     fish_data = [
         ('Tilapia', 'freshwater', 120),
         ('Bangus', 'freshwater', 160),

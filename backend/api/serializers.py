@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
     SupplySource, Inventory, FishDelivery, Report, 
-    Prediction, Notification
+    Prediction, Notification, Bulletin
 )
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -39,6 +39,9 @@ class RetailerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class FishPriceSerializer(serializers.ModelSerializer):
+    fish_name = serializers.ReadOnlyField(source='fish.fish_name')
+    retailer_business_name = serializers.ReadOnlyField(source='retailer.business_name')
+    
     class Meta:
         model = FishPrice
         fields = '__all__'
@@ -76,4 +79,9 @@ class PredictionSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
+        fields = '__all__'
+
+class BulletinSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bulletin
         fields = '__all__'

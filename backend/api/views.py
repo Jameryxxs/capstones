@@ -6,11 +6,12 @@ from django.db.models import Avg, Sum, Count
 from django.db.models.functions import ExtractMonth
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from datetime import timedelta, date
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
     SupplySource, Inventory, FishDelivery, Report, 
-    Prediction, Notification
+    Prediction, Notification, Bulletin
 )
 from .serializers import (
     UserSerializer, FishSerializer, RetailerSerializer, 
@@ -18,7 +19,7 @@ from .serializers import (
     SupplySourceSerializer, InventorySerializer, 
     FishDeliverySerializer, ReportSerializer, 
     PredictionSerializer, NotificationSerializer,
-    MyTokenObtainPairSerializer
+    MyTokenObtainPairSerializer, BulletinSerializer
 )
 from .utils import generate_market_bulletin
 
@@ -36,22 +37,44 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def get_price_forecast(request, fish_id):
-    prices = FishPrice.objects.filter(fish_id=fish_id).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('market_date')
+    prices = FishPrice.objects.filter(fish_id=fish_id).values('market_date', 'price_per_kilo').order_by('market_date')
     if len(prices) < 2:
         return Response({"error": "Insufficient data for prediction"}, status=400)
+    
     first_date = prices[0]['market_date']
-    X = np.array([(p['market_date'] - first_date).days for p in prices]).reshape(-1, 1)
-    y = np.array([float(p['avg_price']) for p in prices])
-    model = LinearRegression()
+    X = []
+    y = []
+    
+    for p in prices:
+        dt = p['market_date']
+        X.append([
+            (dt - first_date).days,
+            dt.weekday(),
+            dt.month
+        ])
+        y.append(float(p['price_per_kilo']))
+    
+    X = np.array(X)
+    y = np.array(y)
+    
+    # Use Random Forest for more robust forecasting
+    model = RandomForestRegressor(n_estimators=100, random_state=42)
     model.fit(X, y)
-    last_day = (prices[len(prices)-1]['market_date'] - first_date).days
-    future_X = np.array([last_day + i for i in range(1, 8)]).reshape(-1, 1)
-    future_y = model.predict(future_X)
+    
+    last_date = prices[len(prices)-1]['market_date']
+    last_day_index = (last_date - first_date).days
+    
     forecast = []
-    for i, pred in enumerate(future_y):
-        forecast_date = prices[len(prices)-1]['market_date'] + timedelta(days=i+1)
+    for i in range(1, 8):
+        future_date = last_date + timedelta(days=i)
+        future_X = np.array([[
+            last_day_index + i,
+            future_date.weekday(),
+            future_date.month
+        ]])
+        pred = model.predict(future_X)[0]
         forecast.append({
-            "date": forecast_date,
+            "date": future_date,
             "predicted_price": round(float(pred), 2)
         })
     return Response(forecast)
@@ -171,11 +194,41 @@ def get_dashboard_stats(request):
                 "message": "Supply volume today is 50% below weekly average!"
             })
 
+    # Weather-Driven Alerts
+    weather_res = get_weather(request)
+    if weather_res.status_code == 200:
+        w_data = weather_res.data
+        if w_data.get('wind_speed', 0) > 10:
+            alerts.append({
+                "type": "weather",
+                "severity": "high",
+                "message": f"High Wind Alert ({w_data['wind_speed']} m/s)! Fishing activities may be suspended."
+            })
+        if w_data.get('temp', 0) > 33:
+            alerts.append({
+                "type": "weather",
+                "severity": "medium",
+                "message": f"Extreme Heat ({w_data['temp']}°C). Ensure proper icing for delivered fish."
+            })
+
+    # Sentiment Calculation
     sentiment = "Stable"
     if len(price_trends) >= 2:
         recent_change = price_trends[-1]['price'] - price_trends[-2]['price']
         if recent_change > 5: sentiment = "Bullish (Rising Prices)"
         elif recent_change < -5: sentiment = "Bearish (Dropping Prices)"
+
+    # Latest Activities for initial load
+    recent_prices = FishPrice.objects.select_related('fish', 'retailer').order_by('-market_date', '-id')[:5]
+    latest_activities = []
+    for p in recent_prices:
+        latest_activities.append({
+            "type": "PRICE_UPDATE",
+            "fish_name": p.fish.fish_name,
+            "price": float(p.price_per_kilo),
+            "retailer": p.retailer.business_name,
+            "timestamp": p.market_date.strftime('%Y-%m-%d')
+        })
 
     return Response({
         "total_fish": total_fish,
@@ -185,7 +238,8 @@ def get_dashboard_stats(request):
         "category_dist": cat_dist,
         "top_species_by_volume": top_species_list,
         "alerts": alerts[:4],
-        "sentiment": sentiment
+        "sentiment": sentiment,
+        "latest_activities": latest_activities
     })
 
 @api_view(['GET'])
@@ -345,7 +399,7 @@ class RetailerViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class FishPriceViewSet(viewsets.ModelViewSet):
-    queryset = FishPrice.objects.all()
+    queryset = FishPrice.objects.select_related('fish', 'retailer').all()
     serializer_class = FishPriceSerializer
 
 class FishingLocationViewSet(viewsets.ModelViewSet):
@@ -401,3 +455,7 @@ class PredictionViewSet(viewsets.ModelViewSet):
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
+
+class BulletinViewSet(viewsets.ModelViewSet):
+    queryset = Bulletin.objects.all()
+    serializer_class = BulletinSerializer

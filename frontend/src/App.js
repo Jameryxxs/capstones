@@ -13,6 +13,7 @@ import Supply from './pages/Supply';
 import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import DataEntry from './pages/DataEntry';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -81,6 +82,7 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/data-entry" element={<DataEntry />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
