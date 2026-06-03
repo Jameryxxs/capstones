@@ -54,7 +54,7 @@ const Layout = ({ children }) => {
         <main 
           style={{ 
             flex: 1, 
-            padding: isMobile ? '80px 20px 40px' : '80px 40px 40px', 
+            padding: isMobile ? '70px 10px 30px' : '80px 40px 40px', 
             marginLeft: (isAuthPage || isMobile) ? 0 : '240px',
             transition: 'margin 0.3s ease',
             width: '100%',
