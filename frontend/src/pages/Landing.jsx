@@ -12,7 +12,7 @@ const Landing = () => {
 
     return (
         <div style={{ 
-            minHeight: 'calc(100vh - 80px)', // Accounting for App.js padding
+            minHeight: 'calc(100vh - 80px)', // Accounting for App.js_padding
             background: 'var(--bg-main)',
             display: 'flex',
             flexDirection: 'column',
@@ -162,3 +162,4 @@ const Landing = () => {
 };
 
 export default Landing;
+

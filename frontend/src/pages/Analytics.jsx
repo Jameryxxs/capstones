@@ -160,7 +160,7 @@ const Analytics = () => {
                 <Card title="Parameters">
                     {(activeTab === 'forecast' || activeTab === 'correlation' || activeTab === 'seasonality') && (
                         <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.85rem' }}>Select Species:</label>
+                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.85rem' }}>Select_Species:</label>
                             <select 
                                 value={selectedFish} 
                                 onChange={(e) => setSelectedFish(e.target.value)}
@@ -292,3 +292,4 @@ const Analytics = () => {
 };
 
 export default Analytics;
+

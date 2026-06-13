@@ -12,6 +12,8 @@ class User(AbstractUser):
         ('admin', 'Admin'),
         ('retailer', 'Retailer'),
         ('staff', 'Staff'),
+        ('guest', 'Guest/Consumer'),
+        ('supplier', 'Supplier/Vessel Owner'),
     )
 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
@@ -56,6 +58,8 @@ class Retailer(models.Model):
     contact_number = models.CharField(max_length=20)
     email = models.EmailField()
     address = models.TextField()
+    latitude = models.DecimalField(max_digits=12, decimal_places=9, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=12, decimal_places=9, null=True, blank=True)
     registration_date = models.DateField(auto_now_add=True)
     status = models.CharField(max_length=50, default='Active')
 
@@ -73,6 +77,7 @@ class FishPrice(models.Model):
     price_per_kilo = models.DecimalField(max_digits=10, decimal_places=2)
     quantity_available = models.IntegerField()
     market_date = models.DateField()
+    origin = models.CharField(max_length=255, blank=True, null=True)
     remarks = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

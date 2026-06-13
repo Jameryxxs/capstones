@@ -1,11 +1,17 @@
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from rest_framework import viewsets, generics, permissions, status
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Avg, Sum, Count
 from django.db.models.functions import ExtractMonth
+from django.conf import settings
+from django.core.cache import cache
 import numpy as np
-from sklearn.linear_model import LinearRegression
+import json
+import urllib.request
+import random
 from sklearn.ensemble import RandomForestRegressor
 from datetime import timedelta, date
 from .models import (
@@ -21,7 +27,8 @@ from .serializers import (
     PredictionSerializer, NotificationSerializer,
     MyTokenObtainPairSerializer, BulletinSerializer
 )
-from .utils import generate_market_bulletin
+from .utils import generate_market_bulletin, create_weather_notification
+from .permissions import IsAdminOrReadOnly, IsAdminUser, IsRetailerOwnerOrAdmin
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -34,6 +41,29 @@ class RegisterView(generics.CreateAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    @action(detail=False, methods=['get', 'patch'])
+    def me(self, request):
+        if request.method == 'GET':
+            serializer = self.get_serializer(request.user)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            serializer = self.get_serializer(request.user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def change_password(self, request):
+        user = request.user
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        if not user.check_password(old_password):
+            return Response({"error": "Incorrect old password"}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(new_password)
+        user.save()
+        return Response({"status": "Password updated successfully"})
 
 @api_view(['GET'])
 def get_price_forecast(request, fish_id):
@@ -83,31 +113,26 @@ def get_price_forecast(request, fish_id):
 def download_market_bulletin(request):
     return generate_market_bulletin(request)
 
-import json
-import urllib.request
-from django.conf import settings
-
-from django.core.cache import cache
-
-@api_view(['GET'])
-def get_weather(request):
+def fetch_weather_info():
     # Try to get from cache first
     cached_weather = cache.get('lucena_weather')
     if cached_weather:
-        return Response(cached_weather)
+        return cached_weather
 
     # Lucena City Coordinates
     lat = 13.9413
     lon = 121.6212
     api_key = getattr(settings, 'OPENWEATHER_API_KEY', None)
     
+    # Dynamic mock data for demonstration if no API key
     weather_data = {
         "city": "Lucena City",
-        "temp": 29.5,
-        "description": "Partly Cloudy",
-        "icon": "03d",
-        "humidity": 78,
-        "wind_speed": 4.2,
+        "temp": round(28.0 + random.uniform(0, 5), 1),
+        "description": random.choice(["Partly Cloudy", "Clear Sky", "Light Rain", "Mostly Sunny"]),
+        "icon": random.choice(["01d", "02d", "03d", "04d", "10d"]),
+        "humidity": random.randint(65, 85),
+        "wind_speed": round(2.0 + random.uniform(0, 10), 1),
+        "rain_chance": random.randint(5, 95),
         "is_mock": True
     }
 
@@ -123,16 +148,57 @@ def get_weather(request):
                     "icon": data['weather'][0]['icon'],
                     "humidity": data['main']['humidity'],
                     "wind_speed": data['wind']['speed'],
+                    "rain_chance": round(data.get('pop', 0) * 100) if 'pop' in data else random.randint(5, 20),
                     "is_mock": False
                 }
         except Exception as e:
             pass
     
-    # Cache for 15 minutes
-    cache.set('lucena_weather', weather_data, 900)
+    # --- AUTOMATED WEATHER NOTIFICATIONS ---
+    # Triggered based on current values (even if mock)
+    if weather_data.get('wind_speed', 0) > 10:
+        create_weather_notification(
+            title="⚠️ HIGH WIND ALERT",
+            message=f"Wind speed is {weather_data['wind_speed']} m/s. Fishing activities may be suspended.",
+            alert_type="system"
+        )
+    
+    if weather_data.get('temp', 0) > 31:
+        create_weather_notification(
+            title="🌡️ EXTREME HEAT ALERT",
+            message=f"Temperature reached {weather_data['temp']}°C. Ensure proper icing for delivered fish.",
+            alert_type="system"
+        )
+    # ----------------------------------------
+
+    # Broadcast weather update via WebSocket
+    try:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "market_updates",
+            {
+                "type": "broadcast_update",
+                "data": {
+                    "type": "WEATHER_UPDATE",
+                    "weather": weather_data
+                }
+            }
+        )
+    except Exception as e:
+        print(f"WS Weather Broadcast Error: {e}")
+    
+    # Cache for 30 seconds for demonstration purposes
+    cache.set('lucena_weather', weather_data, 30)
+    return weather_data
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_weather(request):
+    weather_data = fetch_weather_info()
     return Response(weather_data)
 
 @api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def get_dashboard_stats(request):
     category = request.GET.get('category')
     today = date.today()
@@ -155,29 +221,98 @@ def get_dashboard_stats(request):
     
     price_trends = [{"date": p['market_date'].strftime('%m/%d'), "price": round(float(p['avg_price']), 2)} for p in price_data]
     
-    # Optimized Supply Trends - ONE QUERY
-    supply_data = FishDelivery.objects.filter(
+    # Optimized Supply Trends - Combine Delivery and Retail Logs
+    # This ensures that when retailers log their daily stock, it adds to the total port volume
+    delivery_data = FishDelivery.objects.filter(
         delivery_date__gte=seven_days_ago,
         delivery_status='delivered',
         fish_id__in=relevant_fish_ids
-    ).values('delivery_date').annotate(total_qty=Sum('quantity')).order_by('delivery_date')
+    ).values('delivery_date').annotate(total_qty=Sum('quantity'))
+
+    price_qty_data = FishPrice.objects.filter(
+        market_date__gte=seven_days_ago,
+        fish_id__in=relevant_fish_ids
+    ).values('market_date').annotate(total_qty=Sum('quantity_available'))
+
+    # Combine data by date
+    combined_supply = {}
+    for d in delivery_data:
+        date_str = d['delivery_date'].strftime('%m/%d')
+        combined_supply[date_str] = combined_supply.get(date_str, 0) + (d['total_qty'] or 0)
     
-    supply_trends = [{"date": s['delivery_date'].strftime('%m/%d'), "volume": s['total_qty']} for s in supply_data]
+    for p in price_qty_data:
+        date_str = p['market_date'].strftime('%m/%d')
+        combined_supply[date_str] = combined_supply.get(date_str, 0) + (p['total_qty'] or 0)
+
+    supply_trends = [{"date": k, "volume": v} for k, v in sorted(combined_supply.items())]
         
     # Category Distribution
     cat_dist = list(Fish.objects.values('category').annotate(value=Count('id')))
     for item in cat_dist:
         item['name'] = item.pop('category')
     
-    # Top Species by Volume (Last 30 Days)
+    # NEW: Category Average Prices
+    category_prices = FishPrice.objects.filter(
+        market_date__gte=seven_days_ago
+    ).values('fish__category').annotate(avg_price=Avg('price_per_kilo'))
+    cat_price_data = {item['fish__category']: round(float(item['avg_price']), 2) for item in category_prices}
+
+    # NEW: Species Price Comparison (Include ALL species)
+    all_fish = Fish.objects.all()
+    species_price_list = []
+    
+    # Get latest average prices for each fish
+    for fish in all_fish:
+        avg_p = FishPrice.objects.filter(
+            fish=fish,
+            market_date__gte=today - timedelta(days=30) # Look back 30 days for "current" prices
+        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg'] or 0
+        
+        species_price_list.append({
+            "name": fish.fish_name,
+            "price": round(float(avg_p), 2),
+            "category": fish.category
+        })
+    
+    # Sort by price descending
+    species_price_list.sort(key=lambda x: x['price'], reverse=True)
+
+    # Detailed Category Counts for the card
+    freshwater_count = all_fish.filter(category='freshwater').count()
+    saltwater_count = all_fish.filter(category='saltwater').count()
+    category_breakdown = {
+        "freshwater": freshwater_count,
+        "saltwater": saltwater_count
+    }
+
+    # Top Species by Volume (Last 30 Days) - Combine Delivery and Price Logs
     thirty_days_ago = today - timedelta(days=30)
-    top_species = FishDelivery.objects.filter(
+    
+    delivery_vol = FishDelivery.objects.filter(
         delivery_date__gte=thirty_days_ago, 
         delivery_status='delivered',
         fish_id__in=relevant_fish_ids
-    ).values('fish__fish_name').annotate(volume=Sum('quantity')).order_by('-volume')[:5]
+    ).values('fish__fish_name').annotate(vol=Sum('quantity'))
+
+    price_vol = FishPrice.objects.filter(
+        market_date__gte=thirty_days_ago,
+        fish_id__in=relevant_fish_ids
+    ).values('fish__fish_name').annotate(vol=Sum('quantity_available'))
+
+    combined_vol = {}
+    for d in delivery_vol:
+        name = d['fish__fish_name']
+        combined_vol[name] = combined_vol.get(name, 0) + (d['vol'] or 0)
     
-    top_species_list = [{"name": s['fish__fish_name'], "volume": s['volume']} for s in top_species]
+    for p in price_vol:
+        name = p['fish__fish_name']
+        combined_vol[name] = combined_vol.get(name, 0) + (p['vol'] or 0)
+
+    top_species_list = []
+    for name, vol in combined_vol.items():
+        top_species_list.append({"name": name, "volume": vol})
+    
+    top_species_list = sorted(top_species_list, key=lambda x: x['volume'], reverse=True)[:5]
 
     # Optimized Alerts - Bulk check
     alerts = []
@@ -195,9 +330,8 @@ def get_dashboard_stats(request):
             })
 
     # Weather-Driven Alerts
-    weather_res = get_weather(request)
-    if weather_res.status_code == 200:
-        w_data = weather_res.data
+    w_data = fetch_weather_info()
+    if w_data:
         if w_data.get('wind_speed', 0) > 10:
             alerts.append({
                 "type": "weather",
@@ -225,6 +359,7 @@ def get_dashboard_stats(request):
         latest_activities.append({
             "type": "PRICE_UPDATE",
             "fish_name": p.fish.fish_name,
+            "category": p.fish.category,
             "price": float(p.price_per_kilo),
             "retailer": p.retailer.business_name,
             "timestamp": p.market_date.strftime('%Y-%m-%d')
@@ -233,9 +368,12 @@ def get_dashboard_stats(request):
     return Response({
         "total_fish": total_fish,
         "active_retailers": active_retailers,
+        "category_breakdown": category_breakdown,
         "price_trends": price_trends,
         "supply_trends": supply_trends,
         "category_dist": cat_dist,
+        "category_prices": cat_price_data,
+        "species_prices": species_price_list,
         "top_species_by_volume": top_species_list,
         "alerts": alerts[:4],
         "sentiment": sentiment,
@@ -354,42 +492,107 @@ def get_supplier_performance(request):
     return Response(formatted_data)
 
 @api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def get_comparative_prices(request):
     fish_ids = request.GET.getlist('ids')
     if not fish_ids:
         return Response([])
         
     seven_days_ago = date.today() - timedelta(days=7)
-    data = []
     
-    # Get dates first
-    dates = FishPrice.objects.filter(
+    # Optimized query using values and annotate
+    price_data = FishPrice.objects.filter(
+        fish_id__in=fish_ids,
         market_date__gte=seven_days_ago
-    ).dates('market_date', 'day').order_by('market_date')
-    
-    for d in dates:
-        entry = {"date": d.strftime('%m/%d')}
-        for fid in fish_ids:
-            try:
-                fish = Fish.objects.get(id=fid)
-                avg = FishPrice.objects.filter(
-                    fish_id=fid, 
-                    market_date=d
-                ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg'] or 0
-                entry[fish.fish_name] = round(float(avg), 2)
-            except Fish.DoesNotExist:
-                continue
-        data.append(entry)
+    ).values('market_date', 'fish__fish_name').annotate(
+        avg_price=Avg('price_per_kilo')
+    ).order_by('market_date')
+
+    # Pivot the data in Python
+    pivoted_data = {}
+    for entry in price_data:
+        dt_str = entry['market_date'].strftime('%m/%d')
+        if dt_str not in pivoted_data:
+            pivoted_data[dt_str] = {"date": dt_str}
         
-    return Response(data)
+        pivoted_data[dt_str][entry['fish__fish_name']] = round(float(entry['avg_price']), 2)
+    
+    return Response(list(pivoted_data.values()))
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_retailer_map_data(request):
+    retailers = Retailer.objects.filter(status='Active').select_related('user')
+    today = date.today()
+    
+    map_data = []
+    for retailer in retailers:
+        # Get latest inventory
+        inventory = Inventory.objects.filter(retailer=retailer, availability_status='Available')
+        fish_list = []
+        total_stock = 0
+        for item in inventory:
+            latest_price = FishPrice.objects.filter(
+                retailer=retailer, 
+                fish=item.fish
+            ).order_by('-market_date', '-created_at').first()
+            
+            stock = item.stock_quantity
+            total_stock += stock
+            fish_list.append({
+                "fish_name": item.fish.fish_name,
+                "stock": stock,
+                "unit": item.stock_unit,
+                "price": float(latest_price.price_per_kilo) if latest_price else None,
+                "category": item.fish.category,
+                "remarks": latest_price.remarks if latest_price else ""
+            })
+            
+        status = 'available'
+        if total_stock == 0: status = 'out_of_stock'
+        elif total_stock < 50: status = 'low_stock'
+
+        map_data.append({
+            "id": retailer.id,
+            "business_name": retailer.business_name,
+            "vendor_name": f"{retailer.user.first_name} {retailer.user.last_name}",
+            "stall_number": retailer.stall_number,
+            "contact_number": retailer.contact_number,
+            "status": status,
+            "lat": float(retailer.latitude) if retailer.latitude else None,
+            "lng": float(retailer.longitude) if retailer.longitude else None,
+            "inventory": fish_list
+        })
+        
+    return Response(map_data)
 
 class FishViewSet(viewsets.ModelViewSet):
     queryset = Fish.objects.all()
     serializer_class = FishSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class RetailerViewSet(viewsets.ModelViewSet):
     queryset = Retailer.objects.all()
     serializer_class = RetailerSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    @action(detail=False, methods=['get'])
+    def available_stalls(self, request):
+        taken_stalls = Retailer.objects.values_list('stall_number', flat=True)
+        all_stalls = [f"F{i:02d}" for i in range(1, 31)]
+        available = [s for s in all_stalls if s not in taken_stalls]
+        return Response(available)
+
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        if not request.user.is_authenticated:
+            return Response({"error": "Not authenticated"}, status=401)
+        try:
+            retailer = Retailer.objects.get(user=request.user)
+            serializer = self.get_serializer(retailer)
+            return Response(serializer.data)
+        except Retailer.DoesNotExist:
+            return Response({"error": "Retailer profile not found"}, status=404)
 
     @action(detail=True, methods=['get'])
     def inventory(self, request, pk=None):
@@ -401,14 +604,42 @@ class RetailerViewSet(viewsets.ModelViewSet):
 class FishPriceViewSet(viewsets.ModelViewSet):
     queryset = FishPrice.objects.select_related('fish', 'retailer').all()
     serializer_class = FishPriceSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsRetailerOwnerOrAdmin]
+
+    def get_queryset(self):
+        queryset = FishPrice.objects.select_related('fish', 'retailer').all()
+        # Allow retailers to see ONLY their prices if requested via 'mine' parameter
+        if self.request.query_params.get('mine') == 'true' and self.request.user.is_authenticated:
+            try:
+                retailer = Retailer.objects.get(user=self.request.user)
+                return queryset.filter(retailer=retailer)
+            except Retailer.DoesNotExist:
+                return queryset.none()
+        return queryset
+
+    def perform_create(self, serializer):
+        # Automatically assign retailer if the user is a retailer (Security/UX)
+        if self.request.user.role == 'retailer':
+            try:
+                retailer = Retailer.objects.get(user=self.request.user)
+                serializer.save(created_by=self.request.user, retailer=retailer)
+            except Retailer.DoesNotExist:
+                # Fallback if no profile exists yet
+                serializer.save(created_by=self.request.user)
+        else:
+            # For Admins/Staff, use the retailer provided in the payload
+            # If they didn't provide one, it will use the serializer default or raise error
+            serializer.save(created_by=self.request.user)
 
 class FishingLocationViewSet(viewsets.ModelViewSet):
     queryset = FishingLocation.objects.all()
     serializer_class = FishingLocationSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 class SupplySourceViewSet(viewsets.ModelViewSet):
     queryset = SupplySource.objects.all()
     serializer_class = SupplySourceSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
     @action(detail=True, methods=['post'])
     def update_location(self, request, pk=None):
@@ -427,6 +658,7 @@ class SupplySourceViewSet(viewsets.ModelViewSet):
 class InventoryViewSet(viewsets.ModelViewSet):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @action(detail=False, methods=['get'])
     def my_stall(self, request):
@@ -443,19 +675,29 @@ class InventoryViewSet(viewsets.ModelViewSet):
 class FishDeliveryViewSet(viewsets.ModelViewSet):
     queryset = FishDelivery.objects.all()
     serializer_class = FishDeliverySerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
+    permission_classes = [IsAdminUser]
 
 class PredictionViewSet(viewsets.ModelViewSet):
     queryset = Prediction.objects.all()
     serializer_class = PredictionSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 class NotificationViewSet(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Notification.objects.filter(user=self.request.user).order_by('-created_at')
+        return Notification.objects.none()
 
 class BulletinViewSet(viewsets.ModelViewSet):
-    queryset = Bulletin.objects.all()
+    queryset = Bulletin.objects.all().order_by('-created_at')
     serializer_class = BulletinSerializer
+    permission_classes = [IsAdminOrReadOnly]

@@ -72,3 +72,4 @@ const Supply = () => {
 };
 
 export default Supply;
+

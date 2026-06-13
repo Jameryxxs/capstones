@@ -28,6 +28,24 @@ const Prices = () => {
 
     const columns = [
         { header: 'Fish Species', accessor: 'fish_name' },
+        { 
+            header: 'Category', 
+            accessor: 'fish_category',
+            render: (row) => (
+                <span style={{ 
+                    padding: '4px 10px', 
+                    borderRadius: '20px', 
+                    fontSize: '0.65rem', 
+                    fontWeight: '800',
+                    background: row.fish_category === 'freshwater' ? 'rgba(72, 219, 251, 0.1)' : 'rgba(52, 152, 219, 0.1)',
+                    color: row.fish_category === 'freshwater' ? 'var(--accent-cyan)' : 'var(--secondary-blue)',
+                    border: `1px solid ${row.fish_category === 'freshwater' ? 'var(--accent-cyan)' : 'var(--secondary-blue)'}`,
+                    textTransform: 'uppercase'
+                }}>
+                    {row.fish_category}
+                </span>
+            )
+        },
         { header: 'Retailer', accessor: 'retailer_business_name' },
         { header: 'Price (₱/kg)', accessor: 'price_per_kilo' },
         { header: 'Stock', accessor: 'quantity_available' },
@@ -56,3 +74,4 @@ const Prices = () => {
 };
 
 export default Prices;
+

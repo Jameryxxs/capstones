@@ -27,7 +27,17 @@ const BulletinBoard = ({ bulletins }) => {
                                     {new Date(item.created_at).toLocaleDateString()}
                                 </span>
                             </div>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>{item.content}</p>
+                            <div style={{ 
+                                margin: 0, 
+                                fontSize: '0.8rem', 
+                                color: 'var(--text-muted)', 
+                                lineHeight: '1.6', 
+                                whiteSpace: 'pre-wrap',
+                                fontFamily: item.title.includes('Weather') ? 'monospace' : 'inherit',
+                                overflowX: 'auto'
+                            }}>
+                                {item.content}
+                            </div>
                             <div style={{ marginTop: '8px', fontSize: '0.6rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', color: 
                                 item.category === 'urgent' ? 'var(--fail-red)' : 
                                 item.category === 'weather' ? 'var(--accent-cyan)' : 'var(--text-muted)'

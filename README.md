@@ -2,6 +2,15 @@
 
 A Progressive Web App Up-to-Date Fish Market Monitoring System with Retailer Information, Supply Source Identification, Automated Report Generation, and Predictive Analytics for **Lucena Fish Port Complex**.
 
+## ✨ Key Technical Highlights
+
+*   **Offline-First PWA**: Integrated local caching with **Dexie.js** and **IndexedDB** to allow offline transactions that automatically sync back to the Django backend once online.
+*   **GIS Live Vessel Tracking Map**: Built using **React-Leaflet** and calculated Estimated Time of Arrival (ETA) coordinates using the **Haversine formula** on the backend.
+*   **AI-Driven Forecasting**: Used a Python-based **Random Forest Regressor** (Scikit-Learn) to provide accurate 7-day price predictions based on seasonal patterns.
+*   **Automated Bulletin Engine**: Generated professional PDF bulletins instantly with Python's **ReportLab** library.
+*   **WebSockets for Alerts**: Utilized **Django Channels** and **Daphne** to push live weather warning alerts (e.g., wind speed alerts, heat alerts) directly to stakeholders.
+*   **High-Contrast Dark Mode**: Designed a custom **"Command Center" UI** specifically optimized for outdoor and night readability.
+
 ## 🚀 How to Run the Project
 
 ### 1. Prerequisites

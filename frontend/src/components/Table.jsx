@@ -42,7 +42,7 @@ const Table = ({ columns, data, onRowClick }) => {
                                     fontSize: '0.9rem',
                                     color: 'var(--text-main)'
                                 }}>
-                                    {row[col.accessor] || '—'}
+                                    {col.render ? col.render(row) : (row[col.accessor] || '—')}
                                 </td>
                             ))}
                         </tr>

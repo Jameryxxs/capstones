@@ -16,16 +16,41 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    stall_number = serializers.CharField(write_only=True, required=False)
+    business_name = serializers.CharField(write_only=True, required=False)
+    address = serializers.CharField(write_only=True, required=False)
+    retailer_details = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password', 'role', 'phone_number', 'created_at')
+        fields = ('id', 'username', 'email', 'password', 'role', 'phone_number', 'first_name', 'last_name', 'created_at', 'retailer_details', 'stall_number', 'business_name', 'address')
+
+    def get_retailer_details(self, obj):
+        try:
+            return RetailerSerializer(obj.retailer).data
+        except:
+            return None
 
     def create(self, validated_data):
         password = validated_data.pop('password')
+        stall_number = validated_data.pop('stall_number', 'TBD')
+        business_name = validated_data.pop('business_name', None)
+        address = validated_data.pop('address', '')
+        
         user = User(**validated_data)
         user.set_password(password)
         user.save()
+        
+        # If user is a retailer, create a retailer profile
+        if user.role == 'retailer':
+            Retailer.objects.create(
+                user=user,
+                business_name=business_name or f"{user.username}'s Stall",
+                stall_number=stall_number,
+                contact_number=user.phone_number or "N/A",
+                email=user.email,
+                address=address
+            )
         return user
 
 class FishSerializer(serializers.ModelSerializer):
@@ -40,11 +65,16 @@ class RetailerSerializer(serializers.ModelSerializer):
 
 class FishPriceSerializer(serializers.ModelSerializer):
     fish_name = serializers.ReadOnlyField(source='fish.fish_name')
+    fish_category = serializers.ReadOnlyField(source='fish.category')
     retailer_business_name = serializers.ReadOnlyField(source='retailer.business_name')
     
     class Meta:
         model = FishPrice
         fields = '__all__'
+        read_only_fields = ('created_by',)
+        extra_kwargs = {
+            'retailer': {'required': False}
+        }
 
 class FishingLocationSerializer(serializers.ModelSerializer):
     class Meta:

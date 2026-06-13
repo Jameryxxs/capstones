@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Card = ({ title, children, style, interactive }) => {
+const Card = ({ title, children, style, contentStyle, interactive }) => {
   return (
     <div 
       className={interactive ? 'interactive-card' : ''}
@@ -10,9 +10,10 @@ const Card = ({ title, children, style, interactive }) => {
         padding: '24px',
         boxShadow: 'var(--shadow-command)',
         border: '1px solid var(--border-industrial)',
-        height: 'fit-content',
         position: 'relative',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         ...style
       }}
     >
@@ -37,12 +38,13 @@ const Card = ({ title, children, style, interactive }) => {
           textTransform: 'uppercase',
           letterSpacing: '1.5px',
           borderLeft: '3px solid var(--accent-cyan)',
-          paddingLeft: '12px'
+          paddingLeft: '12px',
+          flexShrink: 0
         }}>
           {title}
         </h3>
       )}
-      <div style={{ width: '100%' }}>
+      <div style={{ width: '100%', flex: 1, minHeight: 0, ...contentStyle }}>
         {children}
       </div>
     </div>

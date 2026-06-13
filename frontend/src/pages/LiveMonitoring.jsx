@@ -79,7 +79,7 @@ const LiveMonitoring = () => {
             }}>
                 <div>
                     <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: isMobile ? '1.5rem' : '2rem', letterSpacing: '2px' }}>
-                        LIVE_INTEL // <span style={{ color: 'var(--accent-cyan)' }}>MONITORING</span>
+                        LIVE INTEL // <span style={{ color: 'var(--accent-cyan)' }}>MONITORING</span>
                     </h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Geographic Supply Tracking & Anomaly Detection
@@ -229,7 +229,7 @@ const LiveMonitoring = () => {
                                 >
                                     <Popup>
                                         <strong>{loc.name} (Source)</strong><br/>
-                                        Total Volume: {loc.volume.toLocaleString()} kg
+                                        Total_Volume: {loc.volume.toLocaleString()} kg
                                     </Popup>
                                 </CircleMarker>
                             ))}
@@ -295,3 +295,4 @@ const LiveMonitoring = () => {
 };
 
 export default LiveMonitoring;
+

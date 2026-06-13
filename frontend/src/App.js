@@ -14,6 +14,9 @@ import Reports from './pages/Reports';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import DataEntry from './pages/DataEntry';
+import BulletinManagement from './pages/BulletinManagement';
+import MarketMap from './pages/MarketMap';
+import MyProducts from './pages/MyProducts';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -76,6 +79,8 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/monitoring" element={<LiveMonitoring />} />
+          <Route path="/market-map" element={<MarketMap />} />
+          <Route path="/my-stall" element={<MyProducts />} />
           <Route path="/prices" element={<Prices />} />
           <Route path="/retailers" element={<Retailers />} />
           <Route path="/supply" element={<Supply />} />
@@ -83,6 +88,7 @@ function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/data-entry" element={<DataEntry />} />
+          <Route path="/bulletin-management" element={<BulletinManagement />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>

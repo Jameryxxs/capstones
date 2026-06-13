@@ -2,11 +2,7 @@ import axios from "axios";
 
 const getApiBaseUrl = () => {
     const hostname = window.location.hostname;
-    // If we're on localhost or similar, assume the backend is also local
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
-        return `http://${hostname}:8000/api/`;
-    }
-    // Fallback/Production URL
+    // Dynamically use the current hostname to connect to the backend
     return `http://${hostname}:8000/api/`;
 };
 
@@ -45,6 +41,9 @@ export const authApi = {
     login: (credentials) => api.post("auth/login/", credentials),
     register: (userData) => api.post("auth/register/", userData),
     refresh: () => api.post("auth/refresh/", { refresh: localStorage.getItem("refresh_token") }),
+    getMe: () => api.get("users/me/"),
+    updateMe: (data) => api.patch("users/me/", data),
+    changePassword: (data) => api.post("users/change_password/", data),
 };
 
 export const getUserRole = () => {
@@ -73,6 +72,8 @@ export const fishApi = {
 
 export const retailerApi = {
     getAll: () => api.get("retailers/"),
+    getMe: () => api.get("retailers/me/"),
+    updateMe: (data) => api.patch("retailers/me/", data),
     create: (data) => api.post("retailers/", data),
     update: (id, data) => api.put(`retailers/${id}/`, data),
     delete: (id) => api.delete(`retailers/${id}/`),
@@ -80,9 +81,20 @@ export const retailerApi = {
 
 export const priceApi = {
     getAll: () => api.get("fish-prices/"),
+    getMine: () => api.get("fish-prices/?mine=true"),
     create: (data) => api.post("fish-prices/", data),
     update: (id, data) => api.put(`fish-prices/${id}/`, data),
     delete: (id) => api.delete(`fish-prices/${id}/`),
+};
+
+export const supplyApi = {
+    getAll: () => api.get("supply-sources/"),
+    getOne: (id) => api.get(`supply-sources/${id}/`),
+};
+
+export const deliveryApi = {
+    getAll: () => api.get("deliveries/"),
+    create: (data) => api.post("deliveries/", data),
 };
 
 export default api;

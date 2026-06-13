@@ -3,8 +3,13 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
     SupplySource, Inventory, FishDelivery, Report, 
-    Prediction, Notification
+    Prediction, Notification, Bulletin
 )
+
+@admin.register(Bulletin)
+class BulletinAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'is_active', 'created_at')
+    list_filter = ('category', 'is_active')
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
