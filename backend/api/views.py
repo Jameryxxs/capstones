@@ -27,7 +27,7 @@ from .serializers import (
     PredictionSerializer, NotificationSerializer,
     MyTokenObtainPairSerializer, BulletinSerializer
 )
-from .utils import generate_market_bulletin, create_weather_notification
+from .utils import generate_market_bulletin, create_system_notification
 from .permissions import IsAdminOrReadOnly, IsAdminUser, IsRetailerOwnerOrAdmin
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -157,14 +157,14 @@ def fetch_weather_info():
     # --- AUTOMATED WEATHER NOTIFICATIONS ---
     # Triggered based on current values (even if mock)
     if weather_data.get('wind_speed', 0) > 10:
-        create_weather_notification(
+        create_system_notification(
             title="⚠️ HIGH WIND ALERT",
             message=f"Wind speed is {weather_data['wind_speed']} m/s. Fishing activities may be suspended.",
             alert_type="system"
         )
     
     if weather_data.get('temp', 0) > 31:
-        create_weather_notification(
+        create_system_notification(
             title="🌡️ EXTREME HEAT ALERT",
             message=f"Temperature reached {weather_data['temp']}°C. Ensure proper icing for delivered fish.",
             alert_type="system"
@@ -323,11 +323,35 @@ def get_dashboard_stats(request):
         vol_today = supply_trends[-1]['volume'] if supply_trends[-1]['date'] == today.strftime('%m/%d') else 0
         vol_avg = sum(s['volume'] for s in supply_trends[:-1]) / (len(supply_trends)-1)
         if vol_today < vol_avg * 0.5 and vol_avg > 0:
+            msg = "Supply volume today is 50% below weekly average!"
             alerts.append({
                 "type": "supply",
                 "severity": "high",
-                "message": "Supply volume today is 50% below weekly average!"
+                "message": msg
             })
+            
+            # Create persistent notification and broadcast
+            created = create_system_notification(
+                title="📊 SUPPLY ALERT",
+                message=msg,
+                alert_type="system"
+            )
+            
+            if created:
+                try:
+                    channel_layer = get_channel_layer()
+                    async_to_sync(channel_layer.group_send)(
+                        "market_updates",
+                        {
+                            "type": "broadcast_update",
+                            "data": {
+                                "type": "SYSTEM_ALERT",
+                                "message": msg
+                            }
+                        }
+                    )
+                except Exception:
+                    pass
 
     # Weather-Driven Alerts
     w_data = fetch_weather_info()

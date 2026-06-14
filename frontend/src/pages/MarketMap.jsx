@@ -104,21 +104,10 @@ const MarketMap = () => {
     if (loading) return <LoadingSpinner />;
 
     return (
-        <div className="page-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 120px)' }}>
+        <div className="page-fade-in map-page-container">
 
             {/* SEARCH & FILTER SECTION */}
-            <div style={{ 
-                background: 'var(--bg-card)', 
-                padding: '15px 25px', 
-                borderRadius: 'var(--radius-lg)', 
-                marginBottom: '20px',
-                boxShadow: 'var(--shadow-command)',
-                border: '1px solid var(--border-industrial)',
-                display: 'grid',
-                gridTemplateColumns: '1.5fr 1fr 1fr auto',
-                gap: '20px',
-                alignItems: 'end'
-            }}>
+            <div className="map-search-section">
                 <div>
                     <label style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '5px', display: 'block' }}>PRODUCT SEARCH</label>
                     <div style={{ position: 'relative' }}>
@@ -151,36 +140,26 @@ const MarketMap = () => {
                     </select>
                 </div>
                 <button 
-                    className="btn-primary" 
+                    className="btn-primary clear-filters-btn" 
                     onClick={() => { setSearchTerm(''); setStallSearch(''); setCategoryFilter('all'); }}
-                    style={{ padding: '12px 20px', fontSize: '0.75rem' }}
                 >
                     CLEAR FILTERS
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '25px', flex: 1, minHeight: 0 }}>
+            <div className="market-main-layout">
 
                 {/* INTERACTIVE FLOOR PLAN MAP */}
-                <div style={{ 
-                    background: 'var(--bg-card)', 
-                    borderRadius: 'var(--radius-lg)', 
-                    border: '1px solid var(--border-industrial)',
-                    boxShadow: 'var(--shadow-command)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    position: 'relative'
-                }}>
-                    <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-industrial)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+                <div className="map-view-card">
+                    <div className="map-card-header">
                         <div>
                             <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-navy)', fontWeight: '800' }}>
                                 CENTRAL FISH PORT MAP // <span style={{ color: 'var(--accent-cyan)' }}>LUCENA CITY</span>
                                                                 </h3>
-                                                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>INTERACTIVE STALL LOCATOR & PRODUCT MONITORING SYSTEM</span>
+                                                                <span className="map-subtitle">INTERACTIVE STALL LOCATOR & PRODUCT MONITORING SYSTEM</span>
 
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '10px 20px', fontSize: '0.65rem', fontWeight: '700' }}>
+                        <div className="map-legend">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#22c55e', borderRadius: '2px' }}></div> AVAILABLE</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#eab308', borderRadius: '2px' }}></div> LOW STOCK</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '10px', height: '10px', background: '#ef4444', borderRadius: '2px' }}></div> OUT STOCK</div>
@@ -190,37 +169,20 @@ const MarketMap = () => {
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, position: 'relative', background: '#f1f5f9', overflow: 'hidden' }}>
+                    <div className="map-canvas-container">
                         {/* ZOOM CONTROLS */}
-                        <div style={{ 
-                            position: 'absolute', 
-                            right: '20px', 
-                            bottom: '20px', 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            gap: '8px', 
-                            zIndex: 20 
-                        }}>
-                            <button onClick={handleZoomIn} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer', fontWeight: '800', color: 'var(--primary-navy)' }}>+</button>
-                            <button onClick={handleResetZoom} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}>{Math.round(zoom * 100)}%</button>
-                            <button onClick={handleZoomOut} style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'white', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer', fontWeight: '800', color: 'var(--primary-navy)' }}>-</button>
+                        <div className="zoom-controls">
+                            <button onClick={handleZoomIn}>+</button>
+                            <button onClick={handleResetZoom}>{Math.round(zoom * 100)}%</button>
+                            <button onClick={handleZoomOut}>-</button>
                         </div>
 
-                        <div style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            overflow: 'auto',
-                            padding: '40px'
-                        }}>
-                            <div style={{ 
+                        <div className="map-scroll-wrapper">
+                            <div className="map-svg-container" style={{ 
                                 transform: `scale(${zoom})`,
-                                transformOrigin: 'top left',
-                                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                width: '1000px',
-                                height: '600px',
-                                position: 'relative'
+                                transformOrigin: 'top left'
                             }}>
-                                <svg viewBox="0 0 1000 600" style={{ width: '1000px', height: '600px', display: 'block', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', borderRadius: '8px', background: 'white' }}>
+                                <svg viewBox="0 0 1000 600" className="map-svg-element">
                                     {/* OUTER WALLS */}
                                     <rect x="0" y="0" width="1000" height="600" fill="#f8fafc" />
                                     <rect x="30" y="30" width="940" height="540" fill="none" stroke="#1e293b" strokeWidth="8" rx="4" />
@@ -362,7 +324,7 @@ const MarketMap = () => {
                 </div>
 
                 {/* INFORMATION PANEL - FULLY SCROLLABLE */}
-                <div style={{ 
+                <div className="info-panel-container" style={{ 
                     display: 'flex', 
                     flexDirection: 'column', 
                     height: '100%',
@@ -580,13 +542,199 @@ const MarketMap = () => {
 
             <style>
                 {`
+                .map-page-container {
+                    display: flex;
+                    flex-direction: column;
+                    height: calc(100vh - 120px);
+                    padding-bottom: 20px;
+                }
+
+                .map-search-section {
+                    background: var(--bg-card);
+                    padding: 15px 25px;
+                    border-radius: var(--radius-lg);
+                    margin-bottom: 20px;
+                    box-shadow: var(--shadow-command);
+                    border: 1px solid var(--border-industrial);
+                    display: grid;
+                    grid-template-columns: 1.5fr 1fr 1fr auto;
+                    gap: 20px;
+                    align-items: end;
+                }
+
+                .market-main-layout {
+                    display: grid;
+                    grid-template-columns: 1fr 420px;
+                    gap: 25px;
+                    flex: 1;
+                    min-height: 0;
+                }
+
+                .map-view-card {
+                    background: var(--bg-card);
+                    border-radius: var(--radius-lg);
+                    border: 1px solid var(--border-industrial);
+                    box-shadow: var(--shadow-command);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    position: relative;
+                }
+
+                .map-card-header {
+                    padding: 15px 20px;
+                    border-bottom: 1px solid var(--border-industrial);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: #f8fafc;
+                }
+
+                .map-subtitle {
+                    fontSize: 0.65rem;
+                    color: var(--text-muted);
+                    display: block;
+                }
+
+                .map-legend {
+                    display: grid;
+                    grid-template-columns: repeat(3, auto);
+                    gap: 10px 20px;
+                    font-size: 0.65rem;
+                    font-weight: 700;
+                }
+
+                .map-canvas-container {
+                    flex: 1;
+                    position: relative;
+                    background: #f1f5f9;
+                    overflow: hidden;
+                    min-height: 400px;
+                }
+
+                .zoom-controls {
+                    position: absolute;
+                    right: 20px;
+                    bottom: 20px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    z-index: 20;
+                }
+
+                .zoom-controls button {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    background: white;
+                    border: 1px solid #cbd5e1;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                    cursor: pointer;
+                    font-weight: 800;
+                    color: var(--primary-navy);
+                    transition: all 0.2s;
+                }
+
+                .zoom-controls button:hover {
+                    background: #f8fafc;
+                    transform: translateY(-1px);
+                }
+
+                .map-scroll-wrapper {
+                    width: 100%;
+                    height: 100%;
+                    overflow: auto;
+                    padding: 40px;
+                }
+
+                .map-svg-container {
+                    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    width: 1000px;
+                    height: 600px;
+                    position: relative;
+                }
+
+                .map-svg-element {
+                    width: 1000px;
+                    height: 600px;
+                    display: block;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                    border-radius: 8px;
+                    background: white;
+                }
+
+                .clear-filters-btn {
+                    padding: 12px 20px;
+                    font-size: 0.75rem;
+                }
+
                 .map-pulse {
                     animation: pulse-border 2s infinite;
                 }
+
                 @keyframes pulse-border {
                     0% { stroke: var(--accent-cyan); stroke-width: 3; filter: brightness(1.2); }
                     50% { stroke: white; stroke-width: 1; filter: brightness(1); }
                     100% { stroke: var(--accent-cyan); stroke-width: 3; filter: brightness(1.2); }
+                }
+
+                /* RESPONSIVE BREAKPOINTS */
+                @media (max-width: 1200px) {
+                    .market-main-layout {
+                        grid-template-columns: 1fr;
+                        height: auto;
+                        overflow: visible;
+                    }
+                    .map-page-container {
+                        height: auto;
+                        overflow: visible;
+                    }
+                    .map-view-card {
+                        height: 600px;
+                        margin-bottom: 25px;
+                    }
+                    .info-panel-container {
+                        height: auto !important;
+                        min-height: 500px;
+                    }
+                }
+
+                @media (max-width: 1024px) {
+                    .map-search-section {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .map-card-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 15px;
+                    }
+                    .map-legend {
+                        grid-template-columns: repeat(2, auto);
+                        width: 100%;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    .map-search-section {
+                        grid-template-columns: 1fr;
+                    }
+                    .map-scroll-wrapper {
+                        padding: 10px;
+                    }
+                    .map-svg-container, .map-svg-element {
+                        width: 100%;
+                        height: auto;
+                    }
+                    .map-view-card {
+                        height: auto;
+                        min-height: 400px;
+                    }
+                    .map-canvas-container {
+                        min-height: 300px;
+                    }
                 }
                 `}
             </style>

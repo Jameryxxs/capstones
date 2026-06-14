@@ -42,7 +42,7 @@ const Landing = () => {
                         marginBottom: '20px',
                         border: '1px solid var(--accent-cyan)'
                     }}>
-                        Strategic Monitoring System
+                        Next-Gen Digital Ecosystem
                     </div>
                     <h1 style={{ 
                         fontSize: isMobile ? '2rem' : '4rem', 
@@ -51,7 +51,7 @@ const Landing = () => {
                         letterSpacing: '-1px',
                         lineHeight: '1.1'
                     }}>
-                        FISH<span style={{ color: 'var(--accent-cyan)' }}>LODGER</span>
+                        FISHLODGER: <span style={{ color: 'var(--accent-cyan)' }}>PORT MONITORING REIMAGINED</span>
                     </h1>
                     <h2 style={{ 
                         fontSize: isMobile ? '1rem' : '1.4rem', 
@@ -62,7 +62,7 @@ const Landing = () => {
                         textTransform: 'none',
                         letterSpacing: 'normal'
                     }}>
-                        Advanced Predictive Analytics and Real-Time Monitoring <br /> for the Lucena Fish Port Complex
+                        A seamless digital ecosystem for the Lucena Fish Port Complex operations.
                     </h2>
                     <div style={{ 
                         display: 'flex', 
@@ -115,9 +115,9 @@ const Landing = () => {
                 boxSizing: 'border-box'
             }}>
                 {[
-                    { title: 'LIVE TELEMETRY', desc: 'Real-time geographic tracking of supply vessels and high-fidelity price monitoring across all retailers.', icon: '📡' },
-                    { title: 'PREDICTIVE MODELS', desc: 'Random Forest AI algorithms providing 7-day price forecasts with integrated seasonality adjustments.', icon: '🧠' },
-                    { title: 'AUTOMATED BULLETINS', desc: 'One-click generation of comprehensive PDF market bulletins for administrative distribution.', icon: '📑' }
+                    { title: 'OPERATIONAL SPEED', desc: 'Streamline port management with instant data syncing and automated digital workflows.', icon: '⚡' },
+                    { title: 'STABLE FORECASTS', desc: 'Accurate, data-backed insights into price fluctuations and seasonal market trends.', icon: '📈' },
+                    { title: 'UNIVERSAL ACCESS', desc: 'Mobile-first PWA designed for port workers and administrators on the go.', icon: '📱' }
                 ].map((feature, i) => (
                     <div key={i} style={{ 
                         padding: isMobile ? '30px' : '40px', 

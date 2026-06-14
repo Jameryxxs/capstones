@@ -63,7 +63,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
 
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                if (data.type === 'BULLETIN_UPDATE' || data.type === 'WEATHER_ALERT') {
+                if (data.type === 'BULLETIN_UPDATE' || data.type === 'WEATHER_ALERT' || data.type === 'SYSTEM_ALERT') {
                     fetchNotifications(); // Refresh list immediately when admin posts
                 }
             };

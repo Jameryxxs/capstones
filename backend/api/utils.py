@@ -7,9 +7,9 @@ from .models import FishPrice, Fish, Notification, User
 from datetime import date, timedelta
 from django.db.models import Avg
 
-def create_weather_notification(title, message, alert_type='system'):
+def create_system_notification(title, message, alert_type='system'):
     """
-    Creates a notification for all active users regarding weather or system alerts.
+    Creates a notification for all active users regarding market or system alerts.
     """
     users = User.objects.filter(is_active=True)
     notifications = []
