@@ -128,6 +128,18 @@ const DataEntry = () => {
         };
     }, []);
 
+    const cleanInt = (val) => {
+        if (!val) return null;
+        const parsed = parseInt(val);
+        return isNaN(parsed) ? null : parsed;
+    };
+
+    const cleanFloat = (val) => {
+        if (!val) return 0.0;
+        const parsed = parseFloat(val);
+        return isNaN(parsed) ? 0.0 : parsed;
+    };
+
     const updatePendingCount = async () => {
         const pCount = await db.pendingPrices.count();
         const dCount = await db.pendingDeliveries.count();
@@ -137,15 +149,16 @@ const DataEntry = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        const fishName = fishes.find(f => f.id === parseInt(formData.fish))?.fish_name || 'Species';
+        const fishId = cleanInt(formData.fish);
+        const fishName = fishes.find(f => f.id === fishId)?.fish_name || 'Species';
 
         if (entryType === 'retailer') {
             const payload = {
-                fish: formData.fish,
-                retailer: formData.retailer,
+                fish: fishId,
+                retailer: cleanInt(formData.retailer),
                 origin: formData.origin,
-                price_per_kilo: parseFloat(formData.price_per_kilo),
-                quantity_available: parseInt(formData.quantity_available),
+                price_per_kilo: cleanFloat(formData.price_per_kilo),
+                quantity_available: cleanInt(formData.quantity_available) || 0,
                 market_date: new Date().toISOString().split('T')[0],
                 remarks: formData.remarks
             };
@@ -175,10 +188,10 @@ const DataEntry = () => {
         } else {
             // Supplier Delivery
             const payload = {
-                fish: formData.fish,
-                supply_source: formData.supply_source,
-                retailer: formData.retailer,
-                quantity: parseInt(formData.quantity),
+                fish: fishId,
+                supply_source: cleanInt(formData.supply_source),
+                retailer: cleanInt(formData.retailer),
+                quantity: cleanInt(formData.quantity) || 0,
                 delivery_date: formData.delivery_date || new Date().toISOString().split('T')[0],
                 delivery_status: 'delivered',
                 remarks: formData.remarks
@@ -232,15 +245,38 @@ const DataEntry = () => {
         if (!isOnline) return;
         setSyncing(true);
         
+        let allSuccess = true;
+
         // Sync Prices
         const pendingPrices = await db.pendingPrices.toArray();
         for (const item of pendingPrices) {
             try {
-                const { id, ...data } = item;
+                const { id, ...rest } = item;
+                // Handle both old format and new format
+                const data = item.payload ? { ...item.payload } : { ...rest };
+
+                // Sanitize values to match Django serializer expected types
+                data.fish = cleanInt(data.fish);
+                
+                const retailerId = cleanInt(data.retailer);
+                if (retailerId) {
+                    data.retailer = retailerId;
+                } else {
+                    delete data.retailer; // Prevents "This field may not be null" DRF validation error
+                }
+                
+                data.price_per_kilo = cleanFloat(data.price_per_kilo);
+                data.quantity_available = cleanInt(data.quantity_available) || 0;
+
                 await api.post('fish-prices/', data);
                 await db.pendingPrices.delete(id);
             } catch (err) {
                 console.error('Sync failed for price log', item, err);
+                allSuccess = false;
+                if (err.response && (err.response.status === 400 || err.response.status === 500)) {
+                    console.warn('Discarding invalid price record:', item);
+                    await db.pendingPrices.delete(item.id);
+                }
             }
         }
 
@@ -248,17 +284,42 @@ const DataEntry = () => {
         const pendingDeliveries = await db.pendingDeliveries.toArray();
         for (const item of pendingDeliveries) {
             try {
-                const { id, ...data } = item;
+                const { id, ...rest } = item;
+                // Handle both old format and new format
+                const data = item.payload ? { ...item.payload } : { ...rest };
+
+                // Sanitize values to match Django serializer expected types
+                data.fish = cleanInt(data.fish);
+                data.supply_source = cleanInt(data.supply_source);
+                
+                const retailerId = cleanInt(data.retailer);
+                if (retailerId) {
+                    data.retailer = retailerId;
+                } else {
+                    delete data.retailer;
+                }
+                
+                data.quantity = cleanInt(data.quantity) || 0;
+
                 await api.post('deliveries/', data);
                 await db.pendingDeliveries.delete(id);
             } catch (err) {
                 console.error('Sync failed for delivery log', item, err);
+                allSuccess = false;
+                if (err.response && (err.response.status === 400 || err.response.status === 500)) {
+                    console.warn('Discarding invalid delivery record:', item);
+                    await db.pendingDeliveries.delete(item.id);
+                }
             }
         }
         
         updatePendingCount();
         setSyncing(false);
-        alert('Sync completed!');
+        if (allSuccess && (pendingPrices.length > 0 || pendingDeliveries.length > 0)) {
+            alert('Sync completed successfully!');
+        } else if (!allSuccess) {
+            alert('Some records failed to sync due to invalid data and have been cleared from pending to prevent blocking.');
+        }
     };
 
     if (loading) return <LoadingSpinner size="60px" />;

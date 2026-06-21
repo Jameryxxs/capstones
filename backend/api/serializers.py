@@ -95,6 +95,9 @@ class FishDeliverySerializer(serializers.ModelSerializer):
     class Meta:
         model = FishDelivery
         fields = '__all__'
+        extra_kwargs = {
+            'retailer': {'required': False}
+        }
 
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:

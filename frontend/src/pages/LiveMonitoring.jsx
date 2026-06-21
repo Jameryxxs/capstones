@@ -70,15 +70,34 @@ const LiveMonitoring = () => {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'LOCATION_UPDATE') {
-                    setMapData(prev => ({
-                        ...prev,
-                        boats: (prev.boats || []).map(boat => 
-                            boat.id === data.vehicle_id 
-                                ? { ...boat, lat: data.lat, lng: data.lng, status: data.status }
-                                : boat
-                        )
-                    }));
+                if (data.type === 'VESSEL_LOCATION_UPDATE') {
+                    setMapData(prev => {
+                        const boats = prev.boats || [];
+                        const existingBoatIndex = boats.findIndex(b => b.id === data.id);
+                        
+                        let newBoats = [...boats];
+                        
+                        if (existingBoatIndex >= 0) {
+                            // Update existing boat
+                            newBoats[existingBoatIndex] = { ...newBoats[existingBoatIndex], lat: data.lat, lng: data.lng, status: data.status };
+                        } else {
+                            // Add new boat
+                            newBoats.push({
+                                id: data.id,
+                                name: data.name,
+                                supplier: data.supplier,
+                                lat: data.lat,
+                                lng: data.lng,
+                                status: data.status,
+                                origin: data.origin
+                            });
+                        }
+                        
+                        // Remove boats that have arrived
+                        newBoats = newBoats.filter(b => b.status === 'in_transit' || b.status === 'at_sea');
+                        
+                        return { ...prev, boats: newBoats };
+                    });
                 }
             } catch (err) {
                 console.error("WebSocket message error:", err);
@@ -283,7 +302,28 @@ const LiveMonitoring = () => {
                                             <h4 style={{ margin: '0 0 5px' }}>{boat.name}</h4>
                                             <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Status:</strong> <span style={{ color: boat.status === 'in_transit' ? 'var(--secondary-blue)' : 'var(--success-green)', fontWeight: 'bold' }}>{boat.status.replace('_', ' ').toUpperCase()}</span></p>
                                             <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Supplier:</strong> {boat.supplier}</p>
-                                            <p style={{ margin: 0, fontSize: '0.8rem' }}><strong>Origin:</strong> {boat.origin}</p>
+                                            <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Origin:</strong> {boat.origin}</p>
+                                            {boat.status === 'in_transit' && (() => {
+                                                const dLat = (13.90683 - boat.lat) * Math.PI / 180;
+                                                const dLon = (121.62608 - boat.lng) * Math.PI / 180;
+                                                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                                                    Math.cos(boat.lat * Math.PI / 180) * Math.cos(13.90683 * Math.PI / 180) * 
+                                                    Math.sin(dLon/2) * Math.sin(dLon/2); 
+                                                const distance = 6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+                                                
+                                                const timeHours = distance / 20; // 20 km/h average boat speed
+                                                const hrs = Math.floor(timeHours);
+                                                const mins = Math.round((timeHours - hrs) * 60);
+                                                const etaStr = timeHours < 0.1 ? "Arriving shortly" : (hrs === 0 ? `${mins} mins` : `${hrs}h ${mins}m`);
+                                                
+                                                return (
+                                                    <>
+                                                        <hr style={{ border: 'none', borderTop: '1px dashed #ccc', margin: '5px 0' }} />
+                                                        <p style={{ margin: '0 0 3px', fontSize: '0.8rem' }}><strong>Distance to Port:</strong> {distance.toFixed(1)} km</p>
+                                                        <p style={{ margin: '0', fontSize: '0.8rem', color: '#0984e3', fontWeight: 'bold' }}><strong>ETA:</strong> {etaStr}</p>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </Popup>
                                 </Marker>

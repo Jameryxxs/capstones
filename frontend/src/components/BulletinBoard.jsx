@@ -3,10 +3,10 @@ import Card from './Card';
 
 const BulletinBoard = ({ bulletins }) => {
     return (
-        <Card title="PORT_ADVISORIES // BULLETIN_BOARD">
+        <Card title="PORT ADVISORIES // BULLETIN BOARD">
             <div style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
                 {bulletins.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>NO_RECENT_ADVISORIES</p>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>NO RECENT ADVISORIES</p>
                 ) : (
                     bulletins.map((item, index) => (
                         <div key={item.id} style={{ 

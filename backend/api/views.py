@@ -12,7 +12,6 @@ import numpy as np
 import json
 import urllib.request
 import random
-from sklearn.ensemble import RandomForestRegressor
 from datetime import timedelta, date
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
@@ -67,12 +66,84 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def get_price_forecast(request, fish_id):
-    # Query pre-calculated predictions instead of training on-the-fly
-    predictions = Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=date.today()).order_by('prediction_date')[:7]
+    today = date.today()
     
-    if not predictions:
-        return Response({"error": "Forecast not generated yet. Please run training job."}, status=400)
+    # Try to get existing predictions for today
+    predictions = list(Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=today).order_by('prediction_date')[:7])
+    
+    if len(predictions) < 7:
+        # Generate them mathematically using Linear Regression
+        thirty_days_ago = today - timedelta(days=30)
         
+        # Get historical prices
+        history = FishPrice.objects.filter(fish_id=fish_id, market_date__gte=thirty_days_ago).values('market_date').annotate(avg_p=Avg('price_per_kilo')).order_by('market_date')
+        
+        try:
+            fish_obj = Fish.objects.get(id=fish_id)
+        except Fish.DoesNotExist:
+            return Response({"error": "Fish not found."}, status=404)
+
+        # Clear old predictions for this fish that are from today onwards
+        Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=today).delete()
+        
+        predictions = []
+        new_preds = []
+
+        if len(history) < 3:
+            # Need at least 3 points for a meaningful trend, fallback to average
+            base_price = float(fish_obj.average_price)
+            m = 0
+            b = base_price
+        else:
+            # Linear Regression Math
+            # x = days since thirty_days_ago
+            # y = avg price
+            n = len(history)
+            sum_x = 0
+            sum_y = 0
+            sum_xy = 0
+            sum_x2 = 0
+            
+            for p in history:
+                days = (p['market_date'] - thirty_days_ago).days
+                price = float(p['avg_p'])
+                sum_x += days
+                sum_y += price
+                sum_xy += (days * price)
+                sum_x2 += (days * days)
+                
+            # Calculate slope (m) and intercept (b)
+            denominator = (n * sum_x2 - (sum_x * sum_x))
+            if denominator == 0:
+                m = 0
+                b = sum_y / n
+            else:
+                m = (n * sum_xy - sum_x * sum_y) / denominator
+                b = (sum_y - m * sum_x) / n
+            
+        # Predict next 7 days
+        for i in range(1, 8):
+            future_date = today + timedelta(days=i)
+            future_x = (future_date - thirty_days_ago).days
+            predicted_price = max(m * future_x + b, 1.0) # Floor at 1.0 to prevent negative prices
+            
+            trend = 'stable'
+            if m > 1.0: trend = 'increase'
+            elif m < -1.0: trend = 'decrease'
+            
+            pred_obj = Prediction(
+                fish=fish_obj,
+                predicted_price=predicted_price,
+                predicted_supply=0, 
+                prediction_date=future_date,
+                trend_status=trend,
+                confidence_score=85.0
+            )
+            new_preds.append(pred_obj)
+            predictions.append(pred_obj)
+            
+        Prediction.objects.bulk_create(new_preds)
+
     forecast = []
     for p in predictions:
         forecast.append({
@@ -490,30 +561,66 @@ def get_supplier_performance(request):
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def get_comparative_prices(request):
-    fish_ids = request.GET.getlist('ids')
-    if not fish_ids:
-        return Response([])
-        
-    seven_days_ago = date.today() - timedelta(days=7)
+    fish_id_1 = request.GET.get('fish_id_1')
+    fish_id_2 = request.GET.get('fish_id_2')
     
-    # Optimized query using values and annotate
-    price_data = FishPrice.objects.filter(
-        fish_id__in=fish_ids,
-        market_date__gte=seven_days_ago
-    ).values('market_date', 'fish__fish_name').annotate(
-        avg_price=Avg('price_per_kilo')
-    ).order_by('market_date')
+    if not fish_id_1 or not fish_id_2:
+        return Response({"error": "Missing parameters"}, status=400)
+        
+    try:
+        fish1 = Fish.objects.get(id=fish_id_1)
+        fish2 = Fish.objects.get(id=fish_id_2)
+    except Fish.DoesNotExist:
+        return Response({"error": "Fish not found"}, status=404)
+        
+    today = date.today()
+    thirty_days_ago = today - timedelta(days=30)
+    
+    # Get historical prices
+    f1_history = FishPrice.objects.filter(fish_id=fish_id_1, market_date__gte=thirty_days_ago).values('market_date').annotate(avg_p=Avg('price_per_kilo')).order_by('market_date')
+    f2_history = FishPrice.objects.filter(fish_id=fish_id_2, market_date__gte=thirty_days_ago).values('market_date').annotate(avg_p=Avg('price_per_kilo')).order_by('market_date')
+    
+    merged_data = {}
+    for i in range(31):
+        d = thirty_days_ago + timedelta(days=i)
+        d_str = d.strftime('%Y-%m-%d')
+        merged_data[d_str] = {
+            "date": d.strftime('%m/%d'),
+            fish1.fish_name: None,
+            fish2.fish_name: None
+        }
+        
+    for p in f1_history:
+        d_str = p['market_date'].strftime('%Y-%m-%d')
+        if d_str in merged_data:
+            merged_data[d_str][fish1.fish_name] = round(float(p['avg_p']), 2)
+            
+    for p in f2_history:
+        d_str = p['market_date'].strftime('%Y-%m-%d')
+        if d_str in merged_data:
+            merged_data[d_str][fish2.fish_name] = round(float(p['avg_p']), 2)
+            
+    # Forward fill missing values so the line chart doesn't break
+    f1_last = None
+    f2_last = None
+    for d_str in sorted(merged_data.keys()):
+        if merged_data[d_str][fish1.fish_name] is not None:
+            f1_last = merged_data[d_str][fish1.fish_name]
+        elif f1_last is not None:
+            merged_data[d_str][fish1.fish_name] = f1_last
+            
+        if merged_data[d_str][fish2.fish_name] is not None:
+            f2_last = merged_data[d_str][fish2.fish_name]
+        elif f2_last is not None:
+            merged_data[d_str][fish2.fish_name] = f2_last
 
-    # Pivot the data in Python
-    pivoted_data = {}
-    for entry in price_data:
-        dt_str = entry['market_date'].strftime('%m/%d')
-        if dt_str not in pivoted_data:
-            pivoted_data[dt_str] = {"date": dt_str}
-        
-        pivoted_data[dt_str][entry['fish__fish_name']] = round(float(entry['avg_price']), 2)
+    formatted_data = {
+        "fish1_name": fish1.fish_name,
+        "fish2_name": fish2.fish_name,
+        "chart_data": list(merged_data.values())
+    }
     
-    return Response(list(pivoted_data.values()))
+    return Response(formatted_data)
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -604,14 +711,38 @@ class FishPriceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = FishPrice.objects.select_related('fish', 'retailer').all()
+        
+        market_date = self.request.query_params.get('date')
+        if market_date:
+            queryset = queryset.filter(market_date=market_date)
+        elif self.request.query_params.get('mine') != 'true' and 'date' not in self.request.query_params:
+            latest_price = FishPrice.objects.order_by('-market_date').first()
+            if latest_price:
+                queryset = queryset.filter(market_date=latest_price.market_date)
+            else:
+                from datetime import date
+                queryset = queryset.filter(market_date=date.today())
+            
+        search_query = self.request.query_params.get('search')
+        if search_query:
+            queryset = queryset.filter(fish__fish_name__icontains=search_query)
+            
+        min_price = self.request.query_params.get('min_price')
+        max_price = self.request.query_params.get('max_price')
+        if min_price:
+            queryset = queryset.filter(price_per_kilo__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price_per_kilo__lte=max_price)
+
         # Allow retailers to see ONLY their prices if requested via 'mine' parameter
         if self.request.query_params.get('mine') == 'true' and self.request.user.is_authenticated:
             try:
                 retailer = Retailer.objects.get(user=self.request.user)
-                return queryset.filter(retailer=retailer)
+                return queryset.filter(retailer=retailer).order_by('-market_date', '-id')
             except Retailer.DoesNotExist:
                 return queryset.none()
-        return queryset
+                
+        return queryset.order_by('-market_date', '-id')
 
     def perform_create(self, serializer):
         # Automatically assign retailer if the user is a retailer (Security/UX)
@@ -657,8 +788,11 @@ class SupplySourceViewSet(viewsets.ModelViewSet):
             {
                 "type": "broadcast_update",
                 "data": {
-                    "type": "LOCATION_UPDATE",
-                    "vehicle_id": boat.id,
+                    "type": "VESSEL_LOCATION_UPDATE",
+                    "id": boat.id,
+                    "name": boat.boat_name,
+                    "supplier": boat.supplier_name,
+                    "origin": boat.fishing_location.location_name if boat.fishing_location else "Unknown",
                     "lat": float(boat.current_lat) if boat.current_lat else None,
                     "lng": float(boat.current_lng) if boat.current_lng else None,
                     "status": boat.status
@@ -689,6 +823,16 @@ class FishDeliveryViewSet(viewsets.ModelViewSet):
     queryset = FishDelivery.objects.all()
     serializer_class = FishDeliverySerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        if self.request.user.role == 'retailer':
+            try:
+                retailer = Retailer.objects.get(user=self.request.user)
+                serializer.save(retailer=retailer)
+            except Retailer.DoesNotExist:
+                serializer.save()
+        else:
+            serializer.save()
 
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()

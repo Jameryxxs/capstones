@@ -448,8 +448,8 @@ const MarketMap = () => {
                                 <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                                     {selectedStall.status === 'inactive' ? (
                                         <button 
-                                            className="btn-primary" 
-                                            style={{ flex: 1, padding: '12px', background: 'var(--accent-cyan)' }}
+                                            className="btn-claim" 
+                                            style={{ flex: 1 }}
                                             onClick={() => navigate('/register', { state: { stall_number: selectedStall.id } })}
                                         >
                                             CLAIM THIS STALL
@@ -457,16 +457,16 @@ const MarketMap = () => {
                                     ) : (
                                         <>
                                             <button 
-                                                className="btn-primary" 
-                                                style={{ flex: 1, padding: '12px' }}
+                                                className="btn-claim" 
+                                                style={{ flex: 1 }}
                                                 onClick={() => navigate('/prices', { state: { retailer_id: selectedStall.id } })}
                                             >
                                                 VIEW LIVE PRICES
                                             </button>
                                             {isMyStall && (
                                                 <button 
-                                                    className="btn-primary" 
-                                                    style={{ flex: 1, padding: '12px', background: 'var(--primary-navy)' }}
+                                                    className="btn-claim" 
+                                                    style={{ flex: 1, backgroundColor: 'var(--primary-navy)' }}
                                                     onClick={() => navigate('/my-stall')}
                                                 >
                                                     MANAGE MY STALL

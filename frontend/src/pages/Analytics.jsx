@@ -47,8 +47,9 @@ const Analytics = () => {
     const [correlationData, setCorrelationData] = useState([]);
     const [seasonalityData, setSeasonalityData] = useState([]);
     const [supplierData, setSupplierData] = useState([]);
-    const [compareData, setCompareData] = useState([]);
-    const [selectedCompare, setSelectedCompare] = useState([]);
+    const [compareData, setCompareData] = useState(null);
+    const [compareFish1, setCompareFish1] = useState('');
+    const [compareFish2, setCompareFish2] = useState('');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -57,7 +58,15 @@ const Analytics = () => {
         api.get('fish/')
             .then(res => {
                 setFishes(res.data);
-                if (res.data.length > 0) setSelectedFish(res.data[0].id);
+                if (res.data.length > 0) {
+                    setSelectedFish(res.data[0].id);
+                    setCompareFish1(res.data[0].id);
+                    if (res.data.length > 1) {
+                        setCompareFish2(res.data[1].id);
+                    } else {
+                        setCompareFish2(res.data[0].id);
+                    }
+                }
                 setInitialLoading(false);
             })
             .catch(err => {
@@ -119,10 +128,9 @@ const Analytics = () => {
     }, [selectedFish, activeTab]);
 
     const handleCompare = () => {
-        if (selectedCompare.length < 2) return;
+        if (!compareFish1 || !compareFish2) return;
         setLoading(true);
-        const params = selectedCompare.map(id => `ids=${id}`).join('&');
-        api.get(`compare-prices/?${params}`)
+        api.get(`compare-prices/?fish_id_1=${compareFish1}&fish_id_2=${compareFish2}`)
             .then(res => {
                 setCompareData(res.data);
                 setLoading(false);
@@ -133,13 +141,78 @@ const Analytics = () => {
             });
     };
 
+    const getDynamicInsight = () => {
+        if (loading) return "Analyzing data patterns...";
+        if (error) return "Unable to generate insights due to data error.";
+
+        const currentFishName = fishes.find(f => f.id === parseInt(selectedFish))?.fish_name || 'this species';
+
+        if (activeTab === 'forecast') {
+            if (!forecastData || forecastData.length < 2) return "Insufficient data to project price movements.";
+            const firstPrice = forecastData[0].price;
+            const lastPrice = forecastData[forecastData.length - 1].price;
+            const diff = lastPrice - firstPrice;
+            const percent = firstPrice > 0 ? (diff / firstPrice) * 100 : 0;
+            
+            if (percent > 2) return `AI Projection indicates a bullish trend for ${currentFishName}, with prices expected to rise by ${percent.toFixed(1)}% over the next 7 days.`;
+            if (percent < -2) return `AI Projection indicates a bearish trend for ${currentFishName}, with prices expected to drop by ${Math.abs(percent).toFixed(1)}% in the coming week.`;
+            return `AI Projection suggests market stability for ${currentFishName}, with prices hovering around ₱${lastPrice.toFixed(2)}.`;
+        }
+
+        if (activeTab === 'correlation') {
+            if (!correlationData || correlationData.length < 3) return "Gathering more data points to identify supply-price correlation.";
+            const avgSupply = correlationData.reduce((acc, curr) => acc + curr.supply, 0) / correlationData.length;
+            const avgPrice = correlationData.reduce((acc, curr) => acc + curr.price, 0) / correlationData.length;
+            return `Analysis shows ${currentFishName} averages ₱${avgPrice.toFixed(2)} when daily supply sits around ${Math.round(avgSupply)} kg. Notice how price fluctuates during volume extremes.`;
+        }
+
+        if (activeTab === 'seasonality') {
+            if (!seasonalityData || seasonalityData.length === 0) return "Not enough historical data to map seasonal trends.";
+            let peakMonth = seasonalityData[0];
+            for (let i = 1; i < seasonalityData.length; i++) {
+                if (seasonalityData[i].volume > peakMonth.volume) peakMonth = seasonalityData[i];
+            }
+            return `Historical AI analysis identifies ${peakMonth.month} as the peak harvest season for ${currentFishName}, yielding average volumes of ${Math.round(peakMonth.volume)} kg.`;
+        }
+
+        if (activeTab === 'comparison') {
+            if (!compareData || !compareData.chart_data || compareData.chart_data.length === 0) return "Select two species to compare market behaviors.";
+            
+            const f1 = compareData.fish1_name;
+            const f2 = compareData.fish2_name;
+            const lastPoint = compareData.chart_data[compareData.chart_data.length - 1];
+            
+            const price1 = lastPoint[f1];
+            const price2 = lastPoint[f2];
+            
+            if (price1 === null || price2 === null) return `Not enough recent data to compare ${f1} and ${f2}.`;
+            
+            if (price1 > price2) {
+                const diff = price1 - price2;
+                return `Species Comparison Analysis: ${f1} is currently trading at a premium of ₱${diff.toFixed(2)} higher than ${f2}.`;
+            } else if (price2 > price1) {
+                const diff = price2 - price1;
+                return `Species Comparison Analysis: ${f2} is currently trading at a premium of ₱${diff.toFixed(2)} higher than ${f1}.`;
+            }
+            return `Species Comparison Analysis: ${f1} and ${f2} are currently trading at the exact same market price.`;
+        }
+
+        if (activeTab === 'suppliers') {
+            if (!supplierData || supplierData.length === 0) return "Aggregating supplier performance metrics.";
+            const topSupplier = supplierData[0]; 
+            return `AI Performance Matrix ranks ${topSupplier.location} as your highest-yielding fishing ground, contributing ${topSupplier.volume} kg to port operations.`;
+        }
+
+        return "AI is ready to analyze your selections.";
+    };
+
     if (initialLoading) return <LoadingSpinner size="60px" />;
 
     return (
         <div className="page-fade-in">
             <div style={{ marginBottom: '30px' }}>
                 <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: isMobile ? '1.5rem' : '2rem', letterSpacing: '2px' }}>
-                    DATA_ANALYSIS // <span style={{ color: 'var(--accent-cyan)' }}>INSIGHTS</span>
+                    DATA ANALYSIS // <span style={{ color: 'var(--accent-cyan)' }}>INSIGHTS</span>
                 </h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     Market Correlations & Predictive Forecasting
@@ -202,42 +275,45 @@ const Analytics = () => {
                     )}
 
                     {activeTab === 'comparison' && (
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.85rem' }}>Select 2-3 Species:</label>
-                            <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '10px', marginBottom: '15px' }}>
-                                {fishes.map(f => (
-                                    <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={selectedCompare.includes(f.id)}
-                                            onChange={(e) => {
-                                                if (e.target.checked) setSelectedCompare([...selectedCompare, f.id]);
-                                                else setSelectedCompare(selectedCompare.filter(id => id !== f.id));
-                                            }}
-                                        />
-                                        <span style={{ fontSize: '0.85rem' }}>{f.fish_name}</span>
-                                    </div>
-                                ))}
+                        <div style={{ padding: '15px', background: 'var(--bg-main)', borderTop: '1px solid var(--border-industrial)', borderBottom: '1px solid var(--border-industrial)' }}>
+                            <h4 style={{ margin: '0 0 15px 0', fontSize: '0.8rem', fontWeight: '800', color: 'var(--primary-navy)' }}>SPECIES COMPARISON SETTINGS</h4>
+                            
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.7rem', color: 'var(--text-muted)' }}>SPECIES 1 (BASE)</label>
+                                    <select 
+                                        value={compareFish1} 
+                                        onChange={(e) => setCompareFish1(e.target.value)}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }}
+                                    >
+                                        {fishes.map(f => <option key={f.id} value={f.id}>{f.fish_name}</option>)}
+                                    </select>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.7rem', color: 'var(--text-muted)' }}>SPECIES 2 (TARGET)</label>
+                                    <select 
+                                        value={compareFish2} 
+                                        onChange={(e) => setCompareFish2(e.target.value)}
+                                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-light)' }}
+                                    >
+                                        {fishes.map(f => <option key={f.id} value={f.id}>{f.fish_name}</option>)}
+                                    </select>
+                                </div>
                             </div>
+                            
                             <button 
                                 onClick={handleCompare}
-                                disabled={selectedCompare.length < 2 || loading}
+                                disabled={!compareFish1 || !compareFish2 || loading}
                                 className="btn-primary"
                                 style={{ width: '100%' }}
                             >
-                                {loading ? 'Loading...' : 'Compare Prices'}
+                                {loading ? 'Loading...' : 'Compare Species Behavior'}
                             </button>
                         </div>
                     )}
 
                     <div style={{ padding: '15px', background: 'rgba(52, 152, 219, 0.05)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-main)', border: '1px solid var(--border-light)' }}>
-                        <strong style={{ color: 'var(--primary-navy)' }}>Insight:</strong> {
-                            activeTab === 'forecast' ? "Projected price movements based on regression." :
-                            activeTab === 'correlation' ? "Relationship between supply volume and market price." :
-                            activeTab === 'seasonality' ? "Average monthly supply patterns." :
-                            activeTab === 'comparison' ? "Relative market value over time." :
-                            "Production volume by fishing ground."
-                        }
+                        <strong style={{ color: 'var(--primary-navy)' }}>✨ AI Insight:</strong> {getDynamicInsight()}
                     </div>
                 </Card>
 
@@ -286,23 +362,15 @@ const Analytics = () => {
                                         <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
                                         <Bar dataKey="volume" fill="var(--accent-cyan)" radius={[2, 2, 0, 0]} />
                                     </BarChart>
-                                ) : activeTab === 'comparison' && compareData.length > 0 ? (
-                                    <LineChart data={compareData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-industrial)" />
+                                ) : activeTab === 'comparison' && compareData && compareData.chart_data ? (
+                                    <LineChart data={compareData.chart_data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
                                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
-                                        {!isMobile && <Legend />}
-                                        {Object.keys(compareData[0] || {}).filter(k => k !== 'date').map((key, i) => (
-                                            <Line 
-                                                key={key} 
-                                                type="monotone" 
-                                                dataKey={key} 
-                                                stroke={['#64ffda', '#48dbfb', '#ff9f43', '#ff6b6b', '#a29bfe'][i % 5]} 
-                                                strokeWidth={3} 
-                                                dot={false}
-                                            />
-                                        ))}
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} cursor={{stroke: 'var(--border-industrial)'}} />
+                                        <Legend />
+                                        <Line type="monotone" dataKey={compareData.fish1_name} stroke="#64ffda" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                                        <Line type="monotone" dataKey={compareData.fish2_name} stroke="#ff9f43" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                                     </LineChart>
                                 ) : activeTab === 'suppliers' && supplierData.length > 0 ? (
                                     <BarChart data={supplierData} layout="vertical" margin={{ left: isMobile ? 10 : 50 }}>
@@ -315,9 +383,9 @@ const Analytics = () => {
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
                                         {error ? (
-                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic', color: '#ff6b6b' }}>FAILED_TO_LOAD</p>
+                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic', color: '#ff6b6b' }}>FAILED TO LOAD</p>
                                         ) : (
-                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>NO_DATA_POINT_FOUND</p>
+                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>NO DATA POINT FOUND</p>
                                         )}
                                     </div>
                                 )}

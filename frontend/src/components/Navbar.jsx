@@ -211,7 +211,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
                                 overflowY: 'auto'
                             }}>
                                 <div style={{ padding: '15px', borderBottom: '1px solid var(--border-industrial)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '1px' }}>SYSTEM_NOTIFICATIONS</h4>
+                                    <h4 style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '1px' }}>SYSTEM NOTIFICATIONS</h4>
                                     {unreadCount > 0 && (
                                         <button 
                                             onClick={markAllAsRead}

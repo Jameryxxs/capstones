@@ -113,7 +113,7 @@ const Settings = () => {
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '30px' }}>
                 
                 {/* 1. PERSONAL PROFILE */}
-                <Card title="USER_IDENTITY_PROFILE">
+                <Card title="USER IDENTITY PROFILE">
                     <form onSubmit={handleUserUpdate} style={{ padding: '10px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
                             <div>
@@ -155,7 +155,7 @@ const Settings = () => {
 
                 {/* 2. RETAILER BUSINESS PROFILE */}
                 {role === 'retailer' && retailer && (
-                    <Card title="BUSINESS_OPERATIONS_PROFILE">
+                    <Card title="BUSINESS OPERATIONS PROFILE">
                         <form onSubmit={handleRetailerUpdate} style={{ padding: '10px' }}>
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>BUSINESS NAME</label>
@@ -193,7 +193,7 @@ const Settings = () => {
                 )}
 
                 {/* 3. SECURITY & ACCESS */}
-                <Card title="SECURITY_ENCRYPTION_ACCESS">
+                <Card title="SECURITY ENCRYPTION ACCESS">
                     <form onSubmit={handlePasswordChange} style={{ padding: '10px' }}>
                         <div style={{ marginBottom: '15px' }}>
                             <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>CURRENT PASSWORD</label>
@@ -234,16 +234,16 @@ const Settings = () => {
                 </Card>
 
                 {/* 4. SYSTEM DIAGNOSTICS */}
-                <Card title="SYSTEM_DIAGNOSTICS_STORAGE">
+                <Card title="SYSTEM DIAGNOSTICS STORAGE">
                     <div style={{ padding: '10px' }}>
                         <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '4px', marginBottom: '15px' }}>
-                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: 'var(--accent-cyan)', letterSpacing: '1px' }}>LOCAL_CACHE_SYNC_STATUS</h4>
+                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: 'var(--accent-cyan)', letterSpacing: '1px' }}>LOCAL CACHE SYNC STATUS</h4>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '5px' }}>
-                                <span>PENDING_PRICE_LOGS</span>
+                                <span>PENDING PRICE LOGS</span>
                                 <span style={{ color: syncStats.prices > 0 ? 'var(--fail-red)' : 'var(--success-green)' }}>{syncStats.prices}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                                <span>PENDING_DELIVERY_LOGS</span>
+                                <span>PENDING DELIVERY LOGS</span>
                                 <span style={{ color: syncStats.deliveries > 0 ? 'var(--fail-red)' : 'var(--success-green)' }}>{syncStats.deliveries}</span>
                             </div>
                             
@@ -254,7 +254,7 @@ const Settings = () => {
                         </div>
 
                         <div style={{ background: 'rgba(255,255,255,0.03)', padding: '15px', borderRadius: '4px' }}>
-                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '1px' }}>APPLICATION_METRICS</h4>
+                            <h4 style={{ margin: '0 0 10px 0', fontSize: '0.75rem', color: 'var(--text-muted)', letterSpacing: '1px' }}>APPLICATION METRICS</h4>
                             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>VERSION: 2.1.0-PRODUCTION</p>
                             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>PROTOCOL: WEBSOCKET_SECURE_READY</p>
                             <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>STORAGE_ENGINE: INDEXED_DB_DEXIE</p>

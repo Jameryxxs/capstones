@@ -90,6 +90,9 @@ export const priceApi = {
 export const supplyApi = {
     getAll: () => api.get("supply-sources/"),
     getOne: (id) => api.get(`supply-sources/${id}/`),
+    create: (data) => api.post("supply-sources/", data),
+    update: (id, data) => api.patch(`supply-sources/${id}/`, data),
+    delete: (id) => api.delete(`supply-sources/${id}/`),
 };
 
 export const deliveryApi = {

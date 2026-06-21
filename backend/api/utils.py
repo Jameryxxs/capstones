@@ -37,20 +37,31 @@ def create_system_notification(title, message, alert_type='system'):
 
 def generate_market_bulletin(request):
     period = request.GET.get('period', 'daily')
+    start_str = request.GET.get('start_date')
+    end_str = request.GET.get('end_date')
+    custom_title = request.GET.get('title')
+
     today = date.today()
     
-    start_date = today
-    title_prefix = "Daily"
-    
-    if period == 'weekly':
-        start_date = today - timedelta(days=7)
-        title_prefix = "Weekly"
-    elif period == 'monthly':
-        start_date = today - timedelta(days=30)
-        title_prefix = "Monthly"
-    elif period == 'annual':
-        start_date = today - timedelta(days=365)
-        title_prefix = "Annual"
+    if start_str and end_str:
+        from datetime import datetime
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
+        title_prefix = custom_title or period.capitalize()
+    else:
+        end_date = today
+        start_date = today
+        title_prefix = "Daily"
+        
+        if period == 'weekly':
+            start_date = today - timedelta(days=7)
+            title_prefix = "Weekly"
+        elif period == 'monthly':
+            start_date = today - timedelta(days=30)
+            title_prefix = "Monthly"
+        elif period == 'annual':
+            start_date = today - timedelta(days=365)
+            title_prefix = "Annual"
 
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=letter)
@@ -61,14 +72,18 @@ def generate_market_bulletin(request):
     pdf.drawCentredString(width / 2, height - 50, f"FishLodger: {title_prefix} Market Bulletin")
     pdf.setFont("Helvetica", 11)
     
-    date_range = today.strftime('%B %d, %Y') if period == 'daily' else f"{start_date.strftime('%b %d')} - {today.strftime('%b %d, %Y')}"
+    if start_date == end_date:
+        date_range = start_date.strftime('%B %d, %Y')
+    else:
+        date_range = f"{start_date.strftime('%b %d, %Y')} - {end_date.strftime('%b %d, %Y')}"
+        
     pdf.drawCentredString(width / 2, height - 70, f"Lucena Fish Port Complex | {date_range}")
     
     pdf.setStrokeColor(colors.HexColor("#48dbfb"))
     pdf.line(50, height - 85, width - 50, height - 85)
 
     # Content Query
-    prices = FishPrice.objects.filter(market_date__range=[start_date, today]).select_related('fish', 'retailer')
+    prices = FishPrice.objects.filter(market_date__range=[start_date, end_date]).select_related('fish', 'retailer')
     
     # Aggregated Summary Data
     total_listings = prices.count()

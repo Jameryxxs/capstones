@@ -42,7 +42,7 @@ const Login = () => {
         }}>
             <Card style={{ width: '100%', maxWidth: '420px', padding: '40px', borderTop: '4px solid var(--accent-cyan)' }}>
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <h2 style={{ color: 'var(--text-main)', fontSize: '1.5rem', margin: '0 0 10px', letterSpacing: '2px' }}>SYSTEM_LOGIN</h2>
+                    <h2 style={{ color: 'var(--text-main)', fontSize: '1.5rem', margin: '0 0 10px', letterSpacing: '2px' }}>SYSTEM LOGIN</h2>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         Authorized Personnel Access Only
                     </p>
@@ -62,11 +62,11 @@ const Login = () => {
                             textTransform: 'uppercase',
                             textAlign: 'center'
                         }}>
-                            SESSION_EXPIRED: PLEASE_REAUTHENTICATE
+                            SESSION EXPIRED: PLEASE REAUTHENTICATE
                         </div>
                     )}
                     <div style={{ marginBottom: '20px' }}>
-                        <label>USER_IDENTIFIER</label>
+                        <label>USER IDENTIFIER</label>
                         <input 
                             type="text" 
                             placeholder="Enter username" 
@@ -76,7 +76,7 @@ const Login = () => {
                         />
                     </div>
                     <div style={{ marginBottom: '25px' }}>
-                        <label>SECURITY_KEY</label>
+                        <label>SECURITY KEY</label>
                         <input 
                             type="password" 
                             placeholder="••••••••" 
@@ -108,11 +108,11 @@ const Login = () => {
                         disabled={loading}
                         style={{ width: '100%', padding: '14px', fontSize: '0.9rem' }}
                     >
-                        {loading ? 'ESTABLISHING_UPLINK...' : 'INITIATE_SESSION'}
+                        {loading ? 'LOGGING IN...' : 'LOGIN'}
                     </button>
 
                     <div style={{ marginTop: '30px', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        NEW_USER? <Link to="/register" style={{ color: 'var(--accent-cyan)', textDecoration: 'none', fontWeight: 'bold' }}>Register_Identity</Link>
+                        NEW USER? <Link to="/register" style={{ color: 'var(--accent-cyan)', textDecoration: 'none', fontWeight: 'bold' }}>Register Identity</Link>
                     </div>
                 </form>
             </Card>
