@@ -62,6 +62,34 @@ const LiveMonitoring = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, [category]);
 
+    useEffect(() => {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.hostname}:8000/ws/updates/`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'LOCATION_UPDATE') {
+                    setMapData(prev => ({
+                        ...prev,
+                        boats: (prev.boats || []).map(boat => 
+                            boat.id === data.vehicle_id 
+                                ? { ...boat, lat: data.lat, lng: data.lng, status: data.status }
+                                : boat
+                        )
+                    }));
+                }
+            } catch (err) {
+                console.error("WebSocket message error:", err);
+            }
+        };
+
+        return () => {
+            if (ws.readyState === 1) ws.close();
+        };
+    }, []);
+
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
     if (loading && stats.total_fish === 0) return <LoadingSpinner size="60px" />;

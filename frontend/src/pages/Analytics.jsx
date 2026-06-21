@@ -1,12 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Card from '../components/Card';
-import axios from 'axios';
 import { 
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     ScatterChart, Scatter, ZAxis, BarChart, Bar, LineChart, Line, Legend
 } from 'recharts';
 import LoadingSpinner from '../components/LoadingSpinner';
+
+const CustomTooltip = ({ active, payload, label, activeTab }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', padding: '10px', borderRadius: '5px' }}>
+                <p style={{ margin: 0, fontWeight: 'bold', color: 'var(--text-main)', fontSize: '0.85rem' }}>{label}</p>
+                {payload.map((entry, index) => {
+                    let valueStr = entry.value;
+                    const nameLower = (entry.name || '').toLowerCase();
+                    if (activeTab === 'forecast' || activeTab === 'comparison' || nameLower.includes('price')) {
+                        valueStr = `₱${parseFloat(entry.value).toFixed(2)}`;
+                    } else if (activeTab === 'seasonality' || activeTab === 'suppliers' || nameLower.includes('supply') || nameLower.includes('volume')) {
+                        valueStr = `${entry.value} kg`;
+                    }
+                    
+                    return (
+                        <p key={index} style={{ margin: 0, color: entry.color || 'var(--accent-cyan)', fontSize: '0.85rem' }}>
+                            {entry.name || 'Value'}: {valueStr}
+                        </p>
+                    );
+                })}
+            </div>
+        );
+    }
+    return null;
+};
 
 const Analytics = () => {
     const [fishes, setFishes] = useState([]);
@@ -48,13 +73,13 @@ const Analytics = () => {
     }, []);
 
     useEffect(() => {
-        if (selectedFish) {
-            fetchAnalyticsForFish();
-        }
-    }, [selectedFish, activeTab]);
+        if (!selectedFish) return;
+        
+        const abortController = new AbortController();
+        const signal = abortController.signal;
 
-    const fetchAnalyticsForFish = () => {
         if (activeTab === 'comparison' || activeTab === 'suppliers') return;
+        
         setLoading(true);
         setError('');
         
@@ -68,7 +93,7 @@ const Analytics = () => {
             return;
         }
 
-        api.get(`${endpoint}`)
+        api.get(`${endpoint}`, { signal })
             .then(res => {
                 if (activeTab === 'forecast') {
                     setForecastData(res.data.map(item => ({
@@ -83,10 +108,15 @@ const Analytics = () => {
                 setLoading(false);
             })
             .catch(err => {
+                if (err.name === 'CanceledError' || err.message === 'canceled') return;
                 setError(err.response?.data?.error || 'Failed to fetch data');
                 setLoading(false);
             });
-    };
+            
+        return () => {
+            abortController.abort();
+        };
+    }, [selectedFish, activeTab]);
 
     const handleCompare = () => {
         if (selectedCompare.length < 2) return;
@@ -213,9 +243,14 @@ const Analytics = () => {
 
                 {/* Visualization Area */}
                 <Card title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Visual`}>
+                    {error && (
+                        <div style={{ padding: '15px', background: 'rgba(255, 107, 107, 0.1)', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: 'var(--radius-sm)', marginBottom: '15px' }}>
+                            <strong>Error:</strong> {error}
+                        </div>
+                    )}
                     {loading ? (
                         <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <LoadingSpinner size="40px" />
+                            <div style={{ width: '90%', height: '80%', borderRadius: '8px', background: 'var(--border-industrial)', opacity: 0.3 }}></div>
                         </div>
                     ) : (
                         <div style={{ height: isMobile ? '300px' : '400px', width: '100%' }}>
@@ -231,7 +266,7 @@ const Analytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
                                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
                                         <Area type="monotone" dataKey="price" stroke="var(--accent-cyan)" fill="url(#colorPrice)" strokeWidth={3} />
                                     </AreaChart>
                                 ) : activeTab === 'correlation' && correlationData.length > 0 ? (
@@ -240,7 +275,7 @@ const Analytics = () => {
                                         <XAxis type="number" dataKey="supply" name="Supply" unit="kg" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis type="number" dataKey="price" name="Price" unit="₱" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <ZAxis type="number" range={[64, 144]} />
-                                        <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} cursor={{ strokeDasharray: '3 3' }} />
                                         <Scatter name="Market Data" data={correlationData} fill="var(--accent-cyan)" />
                                     </ScatterChart>
                                 ) : activeTab === 'seasonality' && seasonalityData.length > 0 ? (
@@ -248,7 +283,7 @@ const Analytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
                                         <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
                                         <Bar dataKey="volume" fill="var(--accent-cyan)" radius={[2, 2, 0, 0]} />
                                     </BarChart>
                                 ) : activeTab === 'comparison' && compareData.length > 0 ? (
@@ -256,7 +291,7 @@ const Analytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-industrial)" />
                                         <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
                                         {!isMobile && <Legend />}
                                         {Object.keys(compareData[0] || {}).filter(k => k !== 'date').map((key, i) => (
                                             <Line 
@@ -274,12 +309,16 @@ const Analytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-industrial)" />
                                         <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
                                         <YAxis dataKey="location" type="category" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} width={isMobile ? 80 : 120} />
-                                        <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)' }} />
+                                        <Tooltip content={<CustomTooltip activeTab={activeTab} />} />
                                         <Bar dataKey="volume" fill="var(--accent-cyan)" name="Volume (kg)" radius={[0, 2, 2, 0]} />
                                     </BarChart>
                                 ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                                        <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>NO_DATA_POINT_FOUND</p>
+                                        {error ? (
+                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic', color: '#ff6b6b' }}>FAILED_TO_LOAD</p>
+                                        ) : (
+                                            <p style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>NO_DATA_POINT_FOUND</p>
+                                        )}
                                     </div>
                                 )}
                             </ResponsiveContainer>

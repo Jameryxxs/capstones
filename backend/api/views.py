@@ -67,45 +67,17 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def get_price_forecast(request, fish_id):
-    prices = FishPrice.objects.filter(fish_id=fish_id).values('market_date', 'price_per_kilo').order_by('market_date')
-    if len(prices) < 2:
-        return Response({"error": "Insufficient data for prediction"}, status=400)
+    # Query pre-calculated predictions instead of training on-the-fly
+    predictions = Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=date.today()).order_by('prediction_date')[:7]
     
-    first_date = prices[0]['market_date']
-    X = []
-    y = []
-    
-    for p in prices:
-        dt = p['market_date']
-        X.append([
-            (dt - first_date).days,
-            dt.weekday(),
-            dt.month
-        ])
-        y.append(float(p['price_per_kilo']))
-    
-    X = np.array(X)
-    y = np.array(y)
-    
-    # Use Random Forest for more robust forecasting
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X, y)
-    
-    last_date = prices[len(prices)-1]['market_date']
-    last_day_index = (last_date - first_date).days
-    
+    if not predictions:
+        return Response({"error": "Forecast not generated yet. Please run training job."}, status=400)
+        
     forecast = []
-    for i in range(1, 8):
-        future_date = last_date + timedelta(days=i)
-        future_X = np.array([[
-            last_day_index + i,
-            future_date.weekday(),
-            future_date.month
-        ]])
-        pred = model.predict(future_X)[0]
+    for p in predictions:
         forecast.append({
-            "date": future_date,
-            "predicted_price": round(float(pred), 2)
+            "date": p.prediction_date,
+            "predicted_price": float(p.predicted_price)
         })
     return Response(forecast)
 
@@ -139,7 +111,7 @@ def fetch_weather_info():
     if api_key:
         try:
             url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-            with urllib.request.urlopen(url) as response:
+            with urllib.request.urlopen(url, timeout=3) as response:
                 data = json.loads(response.read().decode())
                 weather_data = {
                     "city": data['name'],
@@ -152,7 +124,7 @@ def fetch_weather_info():
                     "is_mock": False
                 }
         except Exception as e:
-            pass
+            print(f"Weather API Error/Timeout: {e}")
     
     # --- AUTOMATED WEATHER NOTIFICATIONS ---
     # Triggered based on current values (even if mock)
@@ -677,6 +649,23 @@ class SupplySourceViewSet(viewsets.ModelViewSet):
         if status: boat.status = status
         
         boat.save()
+        
+        # Broadcast the update to all connected WebSockets
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "market_updates",
+            {
+                "type": "broadcast_update",
+                "data": {
+                    "type": "LOCATION_UPDATE",
+                    "vehicle_id": boat.id,
+                    "lat": float(boat.current_lat) if boat.current_lat else None,
+                    "lng": float(boat.current_lng) if boat.current_lng else None,
+                    "status": boat.status
+                }
+            }
+        )
+        
         return Response({"status": "Location updated"})
 
 class InventoryViewSet(viewsets.ModelViewSet):
