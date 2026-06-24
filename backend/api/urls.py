@@ -10,7 +10,8 @@ from .views import (
     get_price_forecast, download_market_bulletin,
     RegisterView, get_dashboard_stats, MyTokenObtainPairView, get_weather,
     get_correlation_data, get_seasonality_data, get_supplier_performance, get_comparative_prices,
-    get_map_data, get_retailer_map_data
+    get_map_data, get_retailer_map_data, get_public_market_view, get_historical_comparison,
+    generate_ai_report, get_public_dashboard_data
 )
 
 router = DefaultRouter()
@@ -42,4 +43,7 @@ urlpatterns = [
     path('compare-prices/', get_comparative_prices, name='compare-prices'),
     path('map-data/', get_map_data, name='map-data'),
     path('retailer-map-data/', get_retailer_map_data, name='retailer-map-data'),
+    path('public-market/', get_public_market_view, name='public-market'),
+    path('public-dashboard/', get_public_dashboard_data, name='public-dashboard'),
+    path('historical-comparison/<int:fish_id>/', get_historical_comparison, name='historical-comparison'),
 ]

@@ -4,7 +4,7 @@ import subprocess
 from datetime import datetime
 
 def run_service():
-    print("🚀 FishLodger Weather Automation Service")
+    print("🚀 FishLedger Weather Automation Service")
     print("This service will generate a weather report every 24 hours.")
     
     # Run once immediately on start

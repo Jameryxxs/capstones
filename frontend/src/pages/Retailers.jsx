@@ -10,6 +10,7 @@ const Retailers = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('suppliers'); // 'suppliers' or 'retailers'
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -77,6 +78,16 @@ const Retailers = () => {
         { header: 'Contact', accessor: 'contact_number' },
     ];
 
+    const filteredRetailers = retailers.filter(r => 
+        r.business_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        r.stall_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const filteredSuppliers = suppliers.filter(s => 
+        s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        s.boat_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     if (loading) return <LoadingSpinner size="60px" />;
 
     return (
@@ -88,56 +99,71 @@ const Retailers = () => {
                 <p style={{ color: 'var(--text-muted)' }}>Verified registry of vessels and stall operators</p>
             </div>
 
-            {/* TAB SELECTOR */}
+            {/* TAB SELECTOR & SEARCH */}
             <div style={{ 
                 display: 'flex', 
-                gap: '10px', 
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '15px', 
                 marginBottom: '20px',
                 borderBottom: '1px solid var(--border-industrial)',
                 paddingBottom: '10px'
             }}>
-                <button 
-                    onClick={() => setActiveTab('suppliers')}
-                    style={{
-                        padding: '10px 20px',
-                        background: activeTab === 'suppliers' ? 'var(--accent-cyan)' : 'transparent',
-                        color: activeTab === 'suppliers' ? 'var(--bg-main)' : 'var(--text-muted)',
-                        border: activeTab === 'suppliers' ? 'none' : '1px solid var(--border-industrial)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                    }}
-                >
-                    SUPPLIERS (VESSELS)
-                </button>
-                <button 
-                    onClick={() => setActiveTab('retailers')}
-                    style={{
-                        padding: '10px 20px',
-                        background: activeTab === 'retailers' ? 'var(--accent-cyan)' : 'transparent',
-                        color: activeTab === 'retailers' ? 'var(--bg-main)' : 'var(--text-muted)',
-                        border: activeTab === 'retailers' ? 'none' : '1px solid var(--border-industrial)',
-                        borderRadius: 'var(--radius-sm)',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                    }}
-                >
-                    RETAILERS (STALLS)
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                        onClick={() => setActiveTab('suppliers')}
+                        style={{
+                            padding: '10px 20px',
+                            background: activeTab === 'suppliers' ? 'var(--accent-cyan)' : 'transparent',
+                            color: activeTab === 'suppliers' ? 'var(--bg-main)' : 'var(--text-muted)',
+                            border: activeTab === 'suppliers' ? 'none' : '1px solid var(--border-industrial)',
+                            borderRadius: 'var(--radius-sm)',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        SUPPLIERS (VESSELS)
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('retailers')}
+                        style={{
+                            padding: '10px 20px',
+                            background: activeTab === 'retailers' ? 'var(--accent-cyan)' : 'transparent',
+                            color: activeTab === 'retailers' ? 'var(--bg-main)' : 'var(--text-muted)',
+                            border: activeTab === 'retailers' ? 'none' : '1px solid var(--border-industrial)',
+                            borderRadius: 'var(--radius-sm)',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease'
+                        }}
+                    >
+                        RETAILERS (STALLS)
+                    </button>
+                </div>
+                
+                <div style={{ flex: '1 1 200px', maxWidth: '300px' }}>
+                    <input 
+                        type="text" 
+                        placeholder={activeTab === 'suppliers' ? "Search vessels/suppliers..." : "Search stalls/retailers..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{ width: '100%', padding: '10px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)' }}
+                    />
+                </div>
             </div>
 
             <Card title={activeTab === 'suppliers' ? "ACTIVE SUPPLY VESSELS" : "REGISTERED MARKET STALLS"}>
                 {activeTab === 'suppliers' ? (
                     <Table 
                         columns={isMobile ? supplierColumns.slice(0, 2).concat(supplierColumns.slice(3)) : supplierColumns} 
-                        data={suppliers} 
+                        data={filteredSuppliers} 
                     />
                 ) : (
                     <Table 
                         columns={isMobile ? retailerColumns.slice(0, 2).concat(retailerColumns.slice(3)) : retailerColumns} 
-                        data={retailers} 
+                        data={filteredRetailers} 
                     />
                 )}
             </Card>

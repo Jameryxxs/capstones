@@ -77,7 +77,7 @@ const Reports = () => {
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            const filename = `FishLodger_${title.toUpperCase()}_Bulletin_${end_date}.pdf`;
+            const filename = `FishLedger_${title.toUpperCase()}_Bulletin_${end_date}.pdf`;
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();

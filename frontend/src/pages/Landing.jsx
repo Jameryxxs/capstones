@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api';
 
 const Landing = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [publicData, setPublicData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
+        
+        // Fetch public market data
+        api.get('public-market/')
+            .then(res => {
+                setPublicData(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to load public market data", err);
+                setLoading(false);
+            });
+
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
@@ -60,7 +75,7 @@ const Landing = () => {
                         lineHeight: '1.1',
                         fontWeight: '800'
                     }}>
-                        FISHLODGER // <span style={{ 
+                        FISHLEDGER // <span style={{ 
                             background: 'linear-gradient(90deg, var(--accent-cyan) 0%, #3498db 100%)',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent'
@@ -170,6 +185,67 @@ const Landing = () => {
                 </div>
             </section>
 
+            {/* Public Market View */}
+            <section style={{ 
+                maxWidth: '1000px', 
+                margin: '60px auto', 
+                padding: '0 20px',
+                width: '100%',
+                boxSizing: 'border-box'
+            }}>
+                <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text-main)' }}>PUBLIC MARKET VIEW</h2>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Live Prices as of {publicData ? publicData.date : 'Today'}
+                    </p>
+                </div>
+
+                {loading ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading market data...</div>
+                ) : publicData && publicData.prices && publicData.prices.length > 0 ? (
+                    <div style={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-industrial)',
+                        borderRadius: 'var(--radius-lg)',
+                        overflow: 'hidden',
+                        boxShadow: 'var(--shadow-command)'
+                    }}>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
+                                <thead style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    <tr>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-industrial)' }}>Species</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-industrial)' }}>Category</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-industrial)' }}>Average Price</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-industrial)' }}>Market Trend</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {publicData.prices.map(fish => (
+                                        <tr key={fish.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                            <td style={{ padding: '15px 20px', fontWeight: 'bold', color: 'var(--text-main)' }}>{fish.fish_name}</td>
+                                            <td style={{ padding: '15px 20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{fish.category}</td>
+                                            <td style={{ padding: '15px 20px', color: 'var(--accent-cyan)', fontWeight: 'bold' }}>₱{fish.current_price.toFixed(2)} / kg</td>
+                                            <td style={{ padding: '15px 20px', fontSize: '0.85rem' }}>
+                                                {fish.trend === 'Increase' ? (
+                                                    <span style={{ color: 'var(--fail-red)', fontWeight: 'bold' }}>↑ +₱{fish.trend_value.toFixed(2)}</span>
+                                                ) : fish.trend === 'Decrease' ? (
+                                                    <span style={{ color: 'var(--success-green)', fontWeight: 'bold' }}>↓ -₱{Math.abs(fish.trend_value).toFixed(2)}</span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-muted)' }}>— Stable</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No market data available right now.</div>
+                )}
+            </section>
+
             {/* Core Capstone Pillars (Objectives Grid) */}
             <section style={{ 
                 maxWidth: '1200px', 
@@ -265,7 +341,7 @@ const Landing = () => {
                 textTransform: 'uppercase',
                 background: 'var(--bg-main)'
             }}>
-                &copy; 2026 LUCENA FISH PORT COMPLEX // SYSTEM_VERSION: 1.0.4-STABLE // POWERED BY <strong>FISHLODGER PROXY</strong>
+                &copy; 2026 LUCENA FISH PORT COMPLEX // SYSTEM_VERSION: 1.0.4-STABLE // POWERED BY <strong>FISHLEDGER PROXY</strong>
             </footer>
         </div>
     );

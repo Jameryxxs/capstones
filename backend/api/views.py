@@ -12,7 +12,12 @@ import numpy as np
 import json
 import urllib.request
 import random
-from datetime import timedelta, date
+from datetime import datetime, timedelta, date
+import os
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
     SupplySource, Inventory, FishDelivery, Report, 
@@ -72,85 +77,166 @@ def get_price_forecast(request, fish_id):
     predictions = list(Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=today).order_by('prediction_date')[:7])
     
     if len(predictions) < 7:
-        # Generate them mathematically using Linear Regression
-        thirty_days_ago = today - timedelta(days=30)
-        
-        # Get historical prices
-        history = FishPrice.objects.filter(fish_id=fish_id, market_date__gte=thirty_days_ago).values('market_date').annotate(avg_p=Avg('price_per_kilo')).order_by('market_date')
-        
         try:
             fish_obj = Fish.objects.get(id=fish_id)
         except Fish.DoesNotExist:
             return Response({"error": "Fish not found."}, status=404)
 
+        sixty_days_ago = today - timedelta(days=60)
+        
+        # Get historical prices
+        history_prices = FishPrice.objects.filter(
+            fish_id=fish_id, 
+            market_date__gte=sixty_days_ago
+        ).values('market_date').annotate(avg_p=Avg('price_per_kilo')).order_by('market_date')
+        
+        # Get historical supply from FishDelivery
+        history_supply = FishDelivery.objects.filter(
+            fish_id=fish_id,
+            delivery_date__gte=sixty_days_ago,
+            delivery_status='delivered'
+        ).values('delivery_date').annotate(total_vol=Sum('quantity'))
+
+        # Also from FishPrice quantities
+        price_supply = FishPrice.objects.filter(
+            fish_id=fish_id,
+            market_date__gte=sixty_days_ago
+        ).values('market_date').annotate(total_vol=Sum('quantity_available'))
+        
+        # Merge datasets by date
+        data_map = {}
+        for d in history_supply:
+            dt = d['delivery_date']
+            data_map[dt] = {'supply': d['total_vol'] or 0, 'price': None}
+        
+        for p in price_supply:
+            dt = p['market_date']
+            if dt not in data_map:
+                data_map[dt] = {'supply': p['total_vol'] or 0, 'price': None}
+            else:
+                data_map[dt]['supply'] += (p['total_vol'] or 0)
+                
+        for p in history_prices:
+            dt = p['market_date']
+            if dt in data_map:
+                data_map[dt]['price'] = float(p['avg_p'])
+            else:
+                data_map[dt] = {'supply': 0, 'price': float(p['avg_p'])}
+
+        # Filter out dates missing price data
+        valid_data = []
+        for dt, values in sorted(data_map.items()):
+            if values['price'] is not None:
+                valid_data.append({
+                    'days_since': (dt - sixty_days_ago).days,
+                    'supply': float(values['supply']),
+                    'price': values['price']
+                })
+        
         # Clear old predictions for this fish that are from today onwards
         Prediction.objects.filter(fish_id=fish_id, prediction_date__gte=today).delete()
         
         predictions = []
         new_preds = []
 
-        if len(history) < 3:
-            # Need at least 3 points for a meaningful trend, fallback to average
+        if len(valid_data) < 3:
+            # Fallback if not enough data
             base_price = float(fish_obj.average_price)
-            m = 0
-            b = base_price
+            for i in range(1, 8):
+                future_date = today + timedelta(days=i)
+                pred_obj = Prediction(
+                    fish=fish_obj,
+                    predicted_price=base_price,
+                    predicted_supply=0, 
+                    prediction_date=future_date,
+                    trend_status='Stable',
+                    confidence_score=50.0 # Low confidence due to lack of data
+                )
+                new_preds.append(pred_obj)
+                predictions.append(pred_obj)
         else:
-            # Linear Regression Math
-            # x = days since thirty_days_ago
-            # y = avg price
-            n = len(history)
-            sum_x = 0
-            sum_y = 0
-            sum_xy = 0
-            sum_x2 = 0
+            # Prepare ML data
+            import numpy as np
+            from sklearn.ensemble import RandomForestRegressor
+            from sklearn.metrics import r2_score
             
-            for p in history:
-                days = (p['market_date'] - thirty_days_ago).days
-                price = float(p['avg_p'])
-                sum_x += days
-                sum_y += price
-                sum_xy += (days * price)
-                sum_x2 += (days * days)
+            X = np.array([[d['days_since'], d['supply']] for d in valid_data])
+            y = np.array([d['price'] for d in valid_data])
+            
+            # Train model
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+            model.fit(X, y)
+            
+            # Calculate confidence score (R^2 score on training data for simplicity)
+            y_pred_train = model.predict(X)
+            r2 = r2_score(y, y_pred_train)
+            confidence = max(min(r2 * 100, 99.0), 10.0) # Bound between 10% and 99%
+            if len(valid_data) < 10:
+                confidence = min(confidence, 60.0) # Penalize small datasets
                 
-            # Calculate slope (m) and intercept (b)
-            denominator = (n * sum_x2 - (sum_x * sum_x))
-            if denominator == 0:
-                m = 0
-                b = sum_y / n
-            else:
-                m = (n * sum_xy - sum_x * sum_y) / denominator
-                b = (sum_y - m * sum_x) / n
+            # Estimate future supply (simple average of last 7 days)
+            recent_supply = [d['supply'] for d in valid_data[-7:]]
+            avg_future_supply = sum(recent_supply) / len(recent_supply) if recent_supply else 0
             
-        # Predict next 7 days
-        for i in range(1, 8):
-            future_date = today + timedelta(days=i)
-            future_x = (future_date - thirty_days_ago).days
-            predicted_price = max(m * future_x + b, 1.0) # Floor at 1.0 to prevent negative prices
+            # Predict next 7 days
+            last_price = valid_data[-1]['price']
             
-            trend = 'stable'
-            if m > 1.0: trend = 'increase'
-            elif m < -1.0: trend = 'decrease'
-            
-            pred_obj = Prediction(
-                fish=fish_obj,
-                predicted_price=predicted_price,
-                predicted_supply=0, 
-                prediction_date=future_date,
-                trend_status=trend,
-                confidence_score=85.0
-            )
-            new_preds.append(pred_obj)
-            predictions.append(pred_obj)
+            for i in range(1, 8):
+                future_date = today + timedelta(days=i)
+                future_x = (future_date - sixty_days_ago).days
+                
+                # Predict
+                predicted_price = model.predict([[future_x, avg_future_supply]])[0]
+                predicted_price = max(predicted_price, 1.0) # Floor at 1.0
+                
+                trend = 'Stable'
+                diff = predicted_price - last_price
+                if diff > 2.0: trend = 'Bullish (Rising Prices)'
+                elif diff < -2.0: trend = 'Bearish (Dropping Prices)'
+                
+                pred_obj = Prediction(
+                    fish=fish_obj,
+                    predicted_price=predicted_price,
+                    predicted_supply=avg_future_supply, 
+                    prediction_date=future_date,
+                    trend_status=trend,
+                    confidence_score=confidence
+                )
+                new_preds.append(pred_obj)
+                predictions.append(pred_obj)
+                
+                last_price = predicted_price # Update for next trend calc
             
         Prediction.objects.bulk_create(new_preds)
+
+    # Calculate volatility (standard deviation of historical prices)
+    prices_list = [d['price'] for d in valid_data] if 'valid_data' in locals() and valid_data else []
+    volatility_percent = 0.0
+    stability = "Stable"
+    
+    if len(prices_list) >= 3:
+        avg_price = sum(prices_list) / len(prices_list)
+        if avg_price > 0:
+            variance = sum([((p - avg_price) ** 2) for p in prices_list]) / len(prices_list)
+            std_dev = variance ** 0.5
+            volatility_percent = (std_dev / avg_price) * 100
+            
+            if volatility_percent > 5.0:
+                stability = "Unstable"
 
     forecast = []
     for p in predictions:
         forecast.append({
             "date": p.prediction_date,
-            "predicted_price": float(p.predicted_price)
+            "predicted_price": float(p.predicted_price),
+            "trend": p.trend_status
         })
-    return Response(forecast)
+        
+    return Response({
+        "forecast": forecast,
+        "stability": stability,
+        "volatility": round(volatility_percent, 2)
+    })
 
 @api_view(['GET'])
 def download_market_bulletin(request):
@@ -352,8 +438,14 @@ def get_dashboard_stats(request):
         combined_vol[name] = combined_vol.get(name, 0) + (p['vol'] or 0)
 
     top_species_list = []
+    total_volume_all = sum(combined_vol.values())
     for name, vol in combined_vol.items():
-        top_species_list.append({"name": name, "volume": vol})
+        percentage = round((vol / total_volume_all) * 100, 1) if total_volume_all > 0 else 0
+        top_species_list.append({
+            "name": name, 
+            "volume": vol,
+            "percentage": percentage
+        })
     
     top_species_list = sorted(top_species_list, key=lambda x: x['volume'], reverse=True)[:5]
 
@@ -531,12 +623,25 @@ def get_seasonality_data(request, fish_id):
     ).annotate(month=ExtractMonth('delivery_date')).values('month').annotate(avg_volume=Avg('quantity')).order_by('month')
     
     month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    formatted_data = []
-    for s in seasonality:
-        formatted_data.append({
-            "month": month_names[s['month'] - 1],
-            "volume": round(float(s['avg_volume']), 2)
+    
+    # Default to the last 12 months
+    today = date.today()
+    last_months = []
+    for i in range(11, -1, -1):
+        m = (today.month - 1 - i) % 12
+        last_months.append({
+            "month": month_names[m],
+            "month_idx": m + 1,
+            "volume": 0
         })
+
+    # Populate with actual data
+    for s in seasonality:
+        for m_data in last_months:
+            if m_data["month_idx"] == s['month']:
+                m_data["volume"] = round(float(s['avg_volume']), 2)
+
+    formatted_data = [{"month": m["month"], "volume": m["volume"]} for m in last_months]
         
     return Response(formatted_data)
 
@@ -624,6 +729,88 @@ def get_comparative_prices(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
+def get_public_market_view(request):
+    today = date.today()
+    thirty_days_ago = today - timedelta(days=30)
+    
+    all_fish = Fish.objects.all()
+    market_summary = []
+    
+    for fish in all_fish:
+        # Get recent prices
+        recent_prices = FishPrice.objects.filter(
+            fish=fish,
+            market_date__gte=thirty_days_ago
+        ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('-market_date')
+        
+        current_price = fish.average_price
+        trend = "Stable"
+        trend_value = 0.0
+        
+        if list(recent_prices):
+            current_price = float(recent_prices[0]['avg_price'])
+            if len(recent_prices) > 1:
+                prev_price = float(recent_prices[1]['avg_price'])
+                trend_value = current_price - prev_price
+                if trend_value > 2:
+                    trend = "Increase"
+                elif trend_value < -2:
+                    trend = "Decrease"
+
+        market_summary.append({
+            "id": fish.id,
+            "fish_name": fish.fish_name,
+            "category": fish.category,
+            "current_price": round(float(current_price), 2),
+            "trend": trend,
+            "trend_value": round(float(trend_value), 2),
+            "status": fish.status
+        })
+        
+    return Response({
+        "date": today.strftime("%B %d, %Y"),
+        "prices": market_summary
+    })
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_historical_comparison(request, fish_id):
+    today = date.today()
+    this_month_start = today.replace(day=1)
+    last_month_end = this_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+    
+    # Get this month's prices
+    this_month = FishPrice.objects.filter(
+        fish_id=fish_id,
+        market_date__gte=this_month_start,
+        market_date__lte=today
+    ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('market_date')
+    
+    # Get last month's prices
+    last_month = FishPrice.objects.filter(
+        fish_id=fish_id,
+        market_date__gte=last_month_start,
+        market_date__lte=last_month_end
+    ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('market_date')
+    
+    # Format data for chart (comparing day 1 to day 31 of both months)
+    chart_data = []
+    for day in range(1, 32):
+        tm_price = next((p['avg_price'] for p in this_month if p['market_date'].day == day), None)
+        lm_price = next((p['avg_price'] for p in last_month if p['market_date'].day == day), None)
+        
+        if tm_price is not None or lm_price is not None:
+            chart_data.append({
+                "day": f"Day {day}",
+                "This Month": round(float(tm_price), 2) if tm_price else None,
+                "Last Month": round(float(lm_price), 2) if lm_price else None
+            })
+            
+    return Response(chart_data)
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def get_retailer_map_data(request):
     retailers = Retailer.objects.filter(status='Active').select_related('user')
     today = date.today()
@@ -669,6 +856,84 @@ def get_retailer_map_data(request):
         
     return Response(map_data)
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def generate_ai_report(request):
+    try:
+        # 1. Aggregate Data for the LLM Prompt
+        today = date.today()
+        seven_days_ago = today - timedelta(days=7)
+        
+        # Fish prices overview
+        active_fishes = Fish.objects.all()
+        fish_data_str = ""
+        for fish in active_fishes:
+            recent_prices = FishPrice.objects.filter(
+                fish=fish, market_date__gte=seven_days_ago
+            ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
+            avg_price = round(recent_prices, 2) if recent_prices else fish.average_price
+            fish_data_str += f"- {fish.fish_name} ({fish.category}): ₱{avg_price}/kg average over last 7 days.\n"
+            
+        # Supply overview
+        docked_vessels = SupplySource.objects.filter(status='docked').count()
+        at_sea_vessels = SupplySource.objects.filter(status='at_sea').count()
+        recent_volume = FishDelivery.objects.filter(
+            delivery_date__gte=seven_days_ago, delivery_status='delivered'
+        ).aggregate(Sum('quantity'))['quantity__sum'] or 0
+        
+        # 2. Construct the Prompt
+        prompt = f"""
+        You are an expert fisheries market analyst for the Lucena Fish Port Complex.
+        Write a comprehensive market insight report for the port administrators based on the following raw data.
+        
+        Raw Data for the past 7 days:
+        - Total Volume Delivered: {recent_volume} kg
+        - Vessels Currently Docked: {docked_vessels}
+        - Vessels Currently At Sea: {at_sea_vessels}
+        
+        Current Average Prices:
+        {fish_data_str}
+        
+        Instructions for the report:
+        1. Write an "Executive Summary" (2-3 sentences).
+        2. Provide a "Price & Supply Analysis" detailing how the supply might be affecting prices.
+        3. Give a "Future Outlook & Recommendations" section suggesting actions for retailers or administrators.
+        4. Use professional formatting with Markdown (bolding, bullet points).
+        5. Keep the report concise but highly analytical.
+        """
+        
+        # 3. Call the LLM (Gemini)
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if genai and api_key:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-pro')
+            response = model.generate_content(prompt)
+            report_text = response.text
+        else:
+            # Fallback Mock Report if API key is missing
+            report_text = f"""
+# Weekly Market Insight Report
+
+## Executive Summary
+The Lucena Fish Port Complex experienced stable market activity over the past 7 days, with total delivered volumes reaching **{recent_volume} kg**. Supply chains remain resilient despite having only **{docked_vessels}** vessels currently docked.
+
+## Price & Supply Analysis
+- **Stable Commodities**: Freshwater catches continue to show robust availability, maintaining stable price floors. 
+- **Supply Constraints**: With **{at_sea_vessels}** vessels still at sea, saltwater species may see temporary upward price pressure until the next major fleet arrival.
+- **Current Averages**:
+{fish_data_str}
+
+## Future Outlook & Recommendations
+- **Retailers**: Advised to strategically procure freshwater species over the next 48 hours while prices remain favorable.
+- **Port Administrators**: Prepare unloading bays for the anticipated arrival of the {at_sea_vessels} vessels currently at sea to prevent logistical bottlenecks.
+> Note: This is an automatically generated fallback report because the `GEMINI_API_KEY` was not configured in the backend environment.
+            """
+            
+        return Response({"report": report_text})
+        
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
 class FishViewSet(viewsets.ModelViewSet):
     queryset = Fish.objects.all()
     serializer_class = FishSerializer
@@ -709,9 +974,27 @@ class FishPriceViewSet(viewsets.ModelViewSet):
     serializer_class = FishPriceSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsRetailerOwnerOrAdmin]
 
+    def perform_create(self, serializer):
+        # Auto-update the Fish's average price based on moving average
+        instance = serializer.save(created_by=self.request.user)
+        fish = instance.fish
+        # Recalculate average price for the last 30 days
+        thirty_days_ago = date.today() - timedelta(days=30)
+        avg = FishPrice.objects.filter(
+            fish=fish, market_date__gte=thirty_days_ago
+        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
+        
+        if avg:
+            fish.average_price = round(avg, 2)
+            fish.save()
+
     def get_queryset(self):
         queryset = FishPrice.objects.select_related('fish', 'retailer').all()
         
+        # Ensure detail views (like update and delete) can access any price, not just today's
+        if self.action in ['retrieve', 'update', 'partial_update', 'destroy']:
+            return queryset
+
         market_date = self.request.query_params.get('date')
         if market_date:
             queryset = queryset.filter(market_date=market_date)
@@ -858,3 +1141,90 @@ class BulletinViewSet(viewsets.ModelViewSet):
     queryset = Bulletin.objects.all().order_by('-created_at')
     serializer_class = BulletinSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_public_dashboard_data(request):
+    today = date.today()
+    current_month = today.month
+    month_name = today.strftime("%B")
+
+    # 1. Seasonal Fish (Top 3 by volume this month)
+    seasonal_deliveries = FishDelivery.objects.filter(
+        delivery_date__month=current_month,
+        delivery_status='delivered'
+    ).values('fish_id', 'fish__fish_name', 'fish__image').annotate(
+        total_volume=Sum('quantity')
+    ).order_by('-total_volume')[:3]
+
+    seasonal_fish = []
+    thirty_days_ago = today - timedelta(days=30)
+    for item in seasonal_deliveries:
+        fish_id = item['fish_id']
+        fish_obj = Fish.objects.get(id=fish_id)
+        
+        # Calculate trend
+        recent_prices = FishPrice.objects.filter(
+            fish_id=fish_id,
+            market_date__gte=thirty_days_ago
+        ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('-market_date')
+        
+        current_price = fish_obj.average_price
+        trend = "Stable"
+        
+        if list(recent_prices):
+            current_price = round(float(recent_prices[0]['avg_price']), 2)
+            if len(recent_prices) > 1:
+                prev_price = float(recent_prices[1]['avg_price'])
+                trend_value = current_price - prev_price
+                if trend_value > 2:
+                    trend = "Increase"
+                elif trend_value < -2:
+                    trend = "Decrease"
+                    
+        seasonal_fish.append({
+            "id": fish_id,
+            "fish_name": item['fish__fish_name'],
+            "image": fish_obj.image.url if fish_obj.image else None,
+            "volume": item['total_volume'],
+            "current_price": current_price,
+            "trend": trend
+        })
+
+    # 2. Top 10 Suppliers (Municipalities) this month
+    top_suppliers_query = FishDelivery.objects.filter(
+        delivery_date__month=current_month,
+        delivery_status='delivered'
+    ).values('supply_source__fishing_location__location_name').annotate(
+        total_volume=Sum('quantity')
+    ).order_by('-total_volume')[:10]
+
+    top_suppliers = []
+    for s in top_suppliers_query:
+        if s['supply_source__fishing_location__location_name']:
+            top_suppliers.append({
+                "location": s['supply_source__fishing_location__location_name'],
+                "volume": s['total_volume']
+            })
+
+    # 3. AI Market Outlook
+    outlook = "Market outlook data is currently unavailable."
+    if genai:
+        try:
+            fish_names = ", ".join([f["fish_name"] for f in seasonal_fish])
+            loc_names = ", ".join([s["location"] for s in top_suppliers[:3]])
+            
+            prompt = f"Act as a market analyst for the Lucena Fish Port. It is currently {month_name}. The top seasonal fish right now are {fish_names}. The top supplying municipalities are {loc_names}. Write a short, highly professional 2-paragraph news update for the public. Paragraph 1 should summarize the current month's catch and supply. Paragraph 2 should give a brief prediction for next month based on typical Philippine weather/seasonality. Do not use markdown formatting, keep it plain text."
+            
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            outlook = response.text.strip()
+        except Exception as e:
+            print("AI Generation Error:", e)
+
+    return Response({
+        "month": month_name,
+        "seasonal_fish": seasonal_fish,
+        "top_suppliers": top_suppliers,
+        "outlook": outlook
+    })

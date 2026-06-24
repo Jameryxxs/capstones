@@ -100,7 +100,7 @@ def generate_production_dataset():
                 'business_name': f'Stall {i} - {random.choice(["Premium", "Fresh", "Daily", "Ocean"])} Fish',
                 'stall_number': f'ST-{i:03d}',
                 'contact_number': f'09{random.randint(100000000, 999999999)}',
-                'email': f'retailer{i}@fishlodger.com',
+                'email': f'retailer{i}@fishledger.com',
                 'address': 'Lucena Fish Port Complex',
                 'status': 'Active'
             }

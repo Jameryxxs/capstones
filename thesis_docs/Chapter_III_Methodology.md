@@ -1,16 +1,16 @@
 # Chapter III: Methodology
 
-This chapter discusses the methodology used in developing the FishLodger system. It outlines the research design, the software development lifecycle, requirements analysis, data gathering procedures, and the technical design of the system, including its database architecture and quality standards.
+This chapter discusses the methodology used in developing the FishLedger system. It outlines the research design, the software development lifecycle, requirements analysis, data gathering procedures, and the technical design of the system, including its database architecture and quality standards.
 
 ## 3.1 Research Design
 The researchers employed a **Descriptive and Developmental** research design. 
 - **Descriptive Research**: Used to document and analyze the current manual processes, price fluctuations, and supply patterns at the Lucena Fish Port Complex.
-- **Developmental Research**: Focused on the systematic design, development, and evaluation of the FishLodger Progressive Web Application (PWA) to solve identified inefficiencies in market monitoring.
+- **Developmental Research**: Focused on the systematic design, development, and evaluation of FishLedger: A Progressive Web App Fish Market Monitoring System with Retailer Information, Supply Source Identification, Automated Report Generation, and Predictive Analytics for Lucena Fish Port Complex, to solve identified inefficiencies in market monitoring.
 
 ## 3.2 Software Development Lifecycle (SDLC)
-The **Agile Methodology** was adopted for the development of FishLodger. This iterative approach allowed the proponents to deliver functional modules incrementally and refine features based on stakeholder feedback.
+The **Agile Methodology** was adopted for the development of FishLedger. This iterative approach allowed the proponents to deliver functional modules incrementally and refine features based on stakeholder feedback.
 
-*(Figure 1. Agile SDLC Model for FishLodger)*
+*(Figure 1. Agile SDLC Model for FishLedger)*
 The figure illustrates the iterative cycle of planning, designing, building, and testing used to ensure the system meets the evolving needs of the Lucena Fish Port. Each iteration or "sprint" resulted in a functional component, such as the price entry module or the forecasting engine.
 
 1. **Requirements Analysis**: Identification of core problems such as delayed price reporting and lack of supply visualization.
@@ -65,9 +65,9 @@ The researchers strictly adhered to **Republic Act No. 10173 (Data Privacy Act o
 ## 3.8 Design of Software, Systems, and Processes
 
 ### 3.8.1 Use Case Diagram
-*(Figure 2. Use Case Diagram for FishLodger)*
+*(Figure 2. Use Case Diagram for FishLedger)*
 
-The Use Case Diagram for FishLodger defines the functional boundaries of the system and the interactions between its five primary actors. Each actor is assigned specific permissions and access levels to ensure data integrity and operational efficiency within the Lucena Fish Port.
+The Use Case Diagram for FishLedger defines the functional boundaries of the system and the interactions between its five primary actors. Each actor is assigned specific permissions and access levels to ensure data integrity and operational efficiency within the Lucena Fish Port.
 
 1.  **Admin (System Administrator):**
     *   **User Management:** Responsible for the CRUD (Create, Read, Update, Delete) operations of all user accounts and role assignments.
@@ -96,7 +96,7 @@ The Use Case Diagram for FishLodger defines the functional boundaries of the sys
 
 ### 3.8.2 Context Diagram
 *(Figure 3. Context Diagram)*
-This diagram shows the FishLodger system at the center, receiving data inputs from external entities (Retailers, Suppliers, Weather API) and providing outputs (Forecasts, PDF Bulletins, Map Visualizations) to the end-users.
+This diagram shows the FishLedger system at the center, receiving data inputs from external entities (Retailers, Suppliers, Weather API) and providing outputs (Forecasts, PDF Bulletins, Map Visualizations) to the end-users.
 
 ### 3.8.3 Data Flow Diagram (DFD)
 *(Figure 4. Data Flow Diagram Level 0)*
@@ -108,7 +108,7 @@ The ERD defines the structural relationship between core entities: Users, Fish, 
 ## 3.9 Database Structure and Schema
 *(Figure 6. Database Schema)*
 
-The Database Schema illustrated in Figure 6 represents the relational architecture of the FishLodger system. It is specifically optimized to handle multi-dimensional data, including time-series market prices, geospatial coordinates for vessel tracking, and AI-driven forecasting results. To ensure data integrity and operational efficiency, the schema follows these principles:
+The Database Schema illustrated in Figure 6 represents the relational architecture of the FishLedger system. It is specifically optimized to handle multi-dimensional data, including time-series market prices, geospatial coordinates for vessel tracking, and AI-driven forecasting results. To ensure data integrity and operational efficiency, the schema follows these principles:
 
 1.  **Normalization (3NF):** The database is designed in Third Normal Form (3NF) to eliminate data redundancy and ensure that every non-key attribute is functionally dependent only on the primary key.
 2.  **Relational Integrity:** Strong foreign key constraints maintain the links between core entities such as Fish, Retailers, and Supply Sources, allowing for complex analytical queries.
@@ -116,7 +116,7 @@ The Database Schema illustrated in Figure 6 represents the relational architectu
 
 ## 3.10 Data Dictionary
 
-The Data Dictionary provides a granular breakdown of the system's database entities, serving as a technical reference for the attributes, data types, and functional roles of each field. This ensures that the data structure is consistent across the development lifecycle and supports the system's requirements for data integrity and precision. Below are the primary tables used in the FishLodger system:
+The Data Dictionary provides a granular breakdown of the system's database entities, serving as a technical reference for the attributes, data types, and functional roles of each field. This ensures that the data structure is consistent across the development lifecycle and supports the system's requirements for data integrity and precision. Below are the primary tables used in the FishLedger system:
 
 ### Table 1: User (Custom User Model)
 | Field | Type | Description |
@@ -179,14 +179,14 @@ Stores the output of the Linear Regression model, including future price estimat
 
 ## 3.11 Development and Testing
 
-The development of FishLodger utilized a modern, decoupled architectural approach to ensure system scalability and high performance in a real-time environment. The backend was engineered using **Python 3.10 and the Django REST Framework (DRF)**, providing a robust and secure foundation for data management, role-based authentication, and the execution of the Linear Regression forecasting models. This environment was chosen for its mature ecosystem and its ability to handle complex relational data with high security standards. On the frontend, the system was built using **React 18 and Node.js**, leveraging a component-based architecture to deliver a highly responsive Progressive Web Application (PWA). Communication between the two layers was facilitated through asynchronous API calls via **Axios**, ensuring that market data and vessel coordinates are updated in real-time without requiring full page reloads, which is critical for the port's operational efficiency.
+The development of FishLedger utilized a modern, decoupled architectural approach to ensure system scalability and high performance in a real-time environment. The backend was engineered using **Python 3.10 and the Django REST Framework (DRF)**, providing a robust and secure foundation for data management, role-based authentication, and the execution of the Linear Regression forecasting models. This environment was chosen for its mature ecosystem and its ability to handle complex relational data with high security standards. On the frontend, the system was built using **React 18 and Node.js**, leveraging a component-based architecture to deliver a highly responsive Progressive Web Application (PWA). Communication between the two layers was facilitated through asynchronous API calls via **Axios**, ensuring that market data and vessel coordinates are updated in real-time without requiring full page reloads, which is critical for the port's operational efficiency.
 
 To ensure the technical integrity and functional suitability of the system, a rigorous three-tier testing methodology was implemented. The process began with **Unit Testing**, where individual components, such as the price calculation logic and the forecasting model’s data preprocessing steps, were validated in isolation to eliminate logical errors at the code level. This was followed by **Integration Testing**, which focused on the seamless data exchange between the Django API and the React frontend. During this phase, the researchers verified that API endpoints correctly handled requests and that the GIS-based vessel tracking map rendered geospatial data accurately. Finally, **User Acceptance Testing (UAT)** was conducted with actual stakeholders from the Lucena Fish Port, including market administrators and retailers. This final phase ensured that the system’s features, such as the automated Daily Bulletin and the price entry interface, met the practical needs of the users and adhered to the ISO 25010 standards for usability and functional appropriateness.
 
 ## 3.12 Description of the Prototype
 *(Figure 7. Prototype: Landing Page and Dashboard)*
 
-The FishLodger prototype, as shown in Figure 7, is a high-fidelity Progressive Web Application (PWA) designed to provide a seamless user experience across mobile and desktop platforms. The interface is built using a modern "Command Center" aesthetic, prioritizing high-contrast data visualization and real-time responsiveness. Key features of the prototype include:
+The FishLedger prototype, as shown in Figure 7, is a high-fidelity Progressive Web Application (PWA) designed to provide a seamless user experience across mobile and desktop platforms. The interface is built using a modern "Command Center" aesthetic, prioritizing high-contrast data visualization and real-time responsiveness. Key features of the prototype include:
 
 1.  **Unified Dashboard:** A centralized "Command Center" that utilizes dynamic charts (via Recharts) to visualize price trends, supply fluctuations, and market health at a glance.
 2.  **Live Monitoring Map:** An interactive Leaflet-based geographic information system (GIS) that tracks fishing vessels in real-time, displaying their transit status and estimated arrival through intuitive map markers.
@@ -201,7 +201,7 @@ This diagram visualizes the implementation of the system, showing the interactio
 
 ## 3.14 ISO 25010 Quality Standards
 
-The FishLodger system was rigorously evaluated against the ISO 25010 Software Quality Model to ensure it meets international standards for software excellence. The evaluation focused on the following key characteristics:
+The FishLedger system was rigorously evaluated against the ISO 25010 Software Quality Model to ensure it meets international standards for software excellence. The evaluation focused on the following key characteristics:
 
 1. **Functional Suitability**:
    - **Functional Completeness**: Every requirement identified during the analysis phase—including price monitoring, AI forecasting, and vessel tracking—was fully implemented and verified.
@@ -217,7 +217,7 @@ The FishLodger system was rigorously evaluated against the ISO 25010 Software Qu
 
 4. **Compatibility**:
    - **Co-existence**: The system was tested to ensure it can operate alongside other mobile and desktop applications without resource conflicts.
-   - **Interoperability**: The use of a RESTful API architecture ensures that FishLodger can seamlessly exchange data with external services, such as weather APIs and global positioning systems.
+   - **Interoperability**: The use of a RESTful API architecture ensures that FishLedger can seamlessly exchange data with external services, such as weather APIs and global positioning systems.
 
 5. **Security**:
    - **Confidentiality**: Implementation of industry-standard JSON Web Tokens (JWT) and encrypted database storage ensures that sensitive user data and transaction records are protected from unauthorized access.

@@ -69,7 +69,7 @@ def generate_market_bulletin(request):
 
     # Header
     pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawCentredString(width / 2, height - 50, f"FishLodger: {title_prefix} Market Bulletin")
+    pdf.drawCentredString(width / 2, height - 50, f"FishLedger: {title_prefix} Market Bulletin")
     pdf.setFont("Helvetica", 11)
     
     if start_date == end_date:
@@ -149,13 +149,13 @@ def generate_market_bulletin(request):
 
     # Footer
     pdf.setFont("Helvetica-Oblique", 8)
-    pdf.drawCentredString(width / 2, 30, "Automated Market Intelligence Report - FishLodger Lucena")
+    pdf.drawCentredString(width / 2, 30, "Automated Market Intelligence Report - FishLedger Lucena")
 
     pdf.showPage()
     pdf.save()
 
     buffer.seek(0)
-    filename = f"FishLodger_{title_prefix}_Bulletin_{today}.pdf"
+    filename = f"FishLedger_{title_prefix}_Bulletin_{today}.pdf"
     return FileResponse(buffer, as_attachment=True, filename=filename)
 
 import math

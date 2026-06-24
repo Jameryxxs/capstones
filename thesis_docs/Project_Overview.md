@@ -1,6 +1,6 @@
-# FishLodger: Project Analysis & Feature Overview
+# FishLedger: Project Analysis & Feature Overview
 
-**FishLodger** is a high-performance Progressive Web App (PWA) designed for the Lucena Fish Port Complex. It serves as a centralized hub for monitoring market operations, tracking fish supply chains, and providing AI-driven market predictions.
+**FishLedger** is a high-performance Progressive Web App (PWA) designed for the Lucena Fish Port Complex. It serves as a centralized hub for monitoring market operations, tracking fish supply chains, and providing AI-driven market predictions.
 
 ---
 

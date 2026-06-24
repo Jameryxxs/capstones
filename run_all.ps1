@@ -1,4 +1,4 @@
-# FishLodger One-Click Startup Script
+# FishLedger One-Click Startup Script
 
 # 1. Start Backend (Django + Daphne)
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd backend; ..\venv\Scripts\activate; python manage.py runserver" -WindowStyle Normal

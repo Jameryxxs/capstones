@@ -72,6 +72,7 @@ const Prices = () => {
         { header: 'Retailer', accessor: 'retailer_business_name' },
         { header: 'Price (₱/kg)', accessor: 'price_per_kilo' },
         { header: 'Stock', accessor: 'quantity_available' },
+        { header: 'Origin', accessor: 'origin', render: (row) => row.origin || 'Unknown' },
         { header: 'Date', accessor: 'market_date' },
     ];
 

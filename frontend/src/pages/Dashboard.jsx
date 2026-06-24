@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Card from '../components/Card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import LoadingSpinner from '../components/LoadingSpinner';
 import BulletinBoard from '../components/BulletinBoard';
 
@@ -15,6 +15,7 @@ const Dashboard = () => {
     });
     const [bulletins, setBulletins] = useState([]);
     const [weather, setWeather] = useState(null);
+    const [publicData, setPublicData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [realtimeUpdates, setRealtimeUpdates] = useState([]);
@@ -31,14 +32,16 @@ const Dashboard = () => {
 
         const fetchData = async () => {
             try {
-                const [statsRes, weatherRes, bulletinRes] = await Promise.all([
+                const [statsRes, weatherRes, bulletinRes, publicRes] = await Promise.all([
                     api.get('dashboard-stats/'),
                     api.get('weather/'),
-                    api.get('bulletins/')
+                    api.get('bulletins/'),
+                    api.get('public-dashboard/')
                 ]);
                 setStats(statsRes.data);
                 setWeather(weatherRes.data);
                 setBulletins(bulletinRes.data);
+                setPublicData(publicRes.data);
                 if (statsRes.data.latest_activities) {
                     setRealtimeUpdates(statsRes.data.latest_activities);
                 }
@@ -122,7 +125,7 @@ const Dashboard = () => {
                 </div>
             </div>
             
-            <div style={{ 
+            <div className="animate-fade-in-up delay-1" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
                 gap: '20px', 
@@ -194,7 +197,7 @@ const Dashboard = () => {
 
             {/* Weather & Operational Alerts */}
             {stats.alerts && stats.alerts.length > 0 && (
-                <div style={{ marginBottom: '30px' }}>
+                <div className="animate-fade-in-up delay-2" style={{ marginBottom: '30px' }}>
                     {stats.alerts.map((alert, i) => (
                         <div key={i} style={{ 
                             padding: '15px 20px', 
@@ -220,7 +223,7 @@ const Dashboard = () => {
                 </div>
             )}
             
-            <div style={{ 
+            <div className="animate-fade-in-up delay-3" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', 
                 gap: '20px',
@@ -240,6 +243,92 @@ const Dashboard = () => {
                     </div>
                 </Card>
 
+                <Card title="Species Volume Distribution (%)">
+                    <div style={{ height: isMobile ? '250px' : '300px', width: '100%' }}>
+                        <ResponsiveContainer>
+                            <BarChart data={stats.top_species_by_volume} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border-industrial)" />
+                                <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
+                                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-main)', fontWeight: 'bold' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
+                                <Tooltip formatter={(value) => `${value}%`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', color: 'var(--text-main)', borderRadius: 'var(--radius-sm)', fontWeight: 'bold' }} cursor={{ fill: 'rgba(100, 255, 218, 0.05)' }} />
+                                <Bar dataKey="percentage" radius={[0, 4, 4, 0]} barSize={isMobile ? 20 : 30}>
+                                    {stats.top_species_by_volume && stats.top_species_by_volume.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#64ffda', '#3498db', '#ff9f43', '#ff6b6b', '#10ac84'][index % 5]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+            </div>
+            
+            {publicData && (
+                <>
+                    {/* AI Market Outlook */}
+                    <div className="animate-fade-in-up delay-4">
+                        <Card title={`AI Market Outlook: ${publicData.month}`} style={{ marginBottom: '30px', background: 'rgba(52, 152, 219, 0.05)', border: '1px solid var(--accent-cyan)' }}>
+                            <div style={{ padding: '20px', fontSize: '1.1rem', lineHeight: '1.6', color: 'var(--text-light)' }}>
+                                <p>{publicData.outlook}</p>
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Catch of the Month */}
+                    <div className="animate-fade-in-up delay-5">
+                        <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', borderBottom: '1px solid var(--border-industrial)', paddingBottom: '10px', color: 'var(--text-main)' }}>
+                            Seasonal Catch of the Month ({publicData.month})
+                        </h2>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                            {publicData.seasonal_fish.map((fish, index) => (
+                                <Card key={index} style={{ textAlign: 'center', padding: '20px' }}>
+                                    {fish.image && <img src={`http://localhost:8000${fish.image}`} alt={fish.fish_name} style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '15px' }} />}
+                                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.4rem', color: 'var(--text-main)' }}>{fish.fish_name}</h3>
+                                    <p style={{ fontSize: '1.2rem', color: 'var(--accent-cyan)', margin: '5px 0' }}>₱{fish.current_price.toFixed(2)} / kg</p>
+                                    <p style={{ fontSize: '0.9rem', color: fish.trend === 'Increase' ? '#ff6b6b' : fish.trend === 'Decrease' ? '#2ecc71' : 'var(--text-muted)' }}>
+                                        Trend: {fish.trend}
+                                    </p>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Top 10 Suppliers */}
+                    <div className="animate-fade-in-up delay-6">
+                        <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', borderBottom: '1px solid var(--border-industrial)', paddingBottom: '10px', color: 'var(--text-main)' }}>
+                            Top 10 Supplying Municipalities
+                        </h2>
+                        <Card style={{ padding: '0', marginBottom: '30px' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                                    <thead>
+                                        <tr style={{ background: 'var(--bg-card)', textAlign: 'left', borderBottom: '1px solid var(--border-industrial)' }}>
+                                            <th style={{ padding: '15px', color: 'var(--text-muted)' }}>Rank</th>
+                                            <th style={{ padding: '15px', color: 'var(--text-muted)' }}>Municipality</th>
+                                            <th style={{ padding: '15px', color: 'var(--text-muted)' }}>Volume Delivered (kg)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {publicData.top_suppliers.map((supplier, index) => (
+                                            <tr key={index} style={{ borderBottom: '1px solid var(--border-industrial)' }}>
+                                                <td style={{ padding: '15px', fontWeight: 'bold', color: 'var(--accent-cyan)' }}>#{index + 1}</td>
+                                                <td style={{ padding: '15px', color: 'var(--text-main)' }}>{supplier.location}</td>
+                                                <td style={{ padding: '15px', color: 'var(--text-main)' }}>{supplier.volume}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Card>
+                    </div>
+                </>
+            )}
+
+            <div className="animate-fade-in-up delay-7" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr', 
+                gap: '20px',
+                marginBottom: '30px'
+            }}>
                 <BulletinBoard bulletins={bulletins} />
             </div>
 

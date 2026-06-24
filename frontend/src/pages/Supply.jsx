@@ -9,6 +9,8 @@ const Supply = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const [formData, setFormData] = useState({
         supplier_name: '',
@@ -145,6 +147,13 @@ const Supply = () => {
         }
     ];
 
+    const filteredSuppliers = suppliers.filter(s => {
+        const matchesSearch = s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                              s.boat_name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
+
     if (loading) return <LoadingSpinner size="60px" />;
 
     return (
@@ -199,11 +208,30 @@ const Supply = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 <Card title="Active Suppliers">
-                    {suppliers.length === 0 ? (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No active suppliers found.</div>
+                    <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
+                        <input 
+                            type="text" 
+                            placeholder="Search by supplier or boat name..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ flex: '1', padding: '10px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)' }}
+                        />
+                        <select 
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            style={{ padding: '10px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)' }}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="at_sea">At Sea</option>
+                            <option value="in_transit">In Transit</option>
+                            <option value="docked">Docked</option>
+                        </select>
+                    </div>
+                    {filteredSuppliers.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No suppliers match your filters.</div>
                     ) : (
                         <div style={{ overflowX: 'auto' }}>
-                            <Table columns={supplierColumns} data={suppliers} />
+                            <Table columns={supplierColumns} data={filteredSuppliers} />
                         </div>
                     )}
                 </Card>

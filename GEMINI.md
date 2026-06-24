@@ -1,7 +1,7 @@
-# FishLodger Project Instructions
+# FishLedger Project Instructions
 
 ## Project Overview
-**FishLodger** is a PWA for monitoring the Lucena Fish Port Complex.
+**FishLedger: A Progressive Web App Fish Market Monitoring System with Retailer Information, Supply Source Identification, Automated Report Generation, and Predictive Analytics for Lucena Fish Port Complex**
 
 ## Architecture
 - **Backend**: Django (Lucena/backend)

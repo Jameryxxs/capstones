@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-const CACHE_NAME = 'fishlodger-v1';
+const CACHE_NAME = 'fishledger-v1';
 const urlsToCache = [
   '/',
   '/index.html',

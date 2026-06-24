@@ -134,8 +134,8 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
             zIndex: 1000,
             boxShadow: 'var(--shadow-command)'
         }}>
-            {/* Hamburger Menu for Mobile/Tablet */}
-            {isMobile && !isAuthPage && (
+            {/* Hamburger Menu */}
+            {!isAuthPage && (
                 <button 
                     onClick={onToggleSidebar}
                     style={{

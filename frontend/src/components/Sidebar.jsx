@@ -89,20 +89,20 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
             )}
 
             <aside style={{ 
-                width: '240px', 
+                width: (!isMobile && !isOpen) ? '70px' : '240px', 
                 background: 'var(--bg-sidebar)', 
                 color: 'var(--text-main)', 
                 height: '100vh', 
                 position: 'fixed', 
                 top: 0, 
-                left: isOpen ? 0 : '-240px',
+                left: (isMobile && !isOpen) ? '-240px' : 0,
                 padding: '80px 0 20px',
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 900,
                 borderRight: '1px solid var(--border-industrial)',
                 boxShadow: 'var(--shadow-command)',
-                transition: 'left 0.3s ease'
+                transition: 'left 0.3s ease, width 0.3s ease'
             }}>
                 <div style={{ flex: 1 }}>
                     {filteredLinks.map(link => (
@@ -112,7 +112,8 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                             style={({ isActive }) => ({
                                 display: 'flex',
                                 alignItems: 'center',
-                                padding: '14px 24px',
+                                justifyContent: (!isMobile && !isOpen) ? 'center' : 'flex-start',
+                                padding: (!isMobile && !isOpen) ? '14px 0' : '14px 24px',
                                 color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
                                 textDecoration: 'none',
                                 borderRight: isActive ? '3px solid var(--accent-cyan)' : '3px solid transparent',
@@ -127,13 +128,13 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                             {({ isActive }) => (
                                 <>
                                     <span style={{ 
-                                        marginRight: '12px', 
+                                        marginRight: (!isMobile && !isOpen) ? '0' : '12px', 
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)',
                                         opacity: isActive ? 1 : 0.6 
                                     }}>{link.icon}</span>
-                                    {link.label}
+                                    {(!isMobile && !isOpen) ? null : link.label}
                                 </>
                             )}
                         </NavLink>
@@ -163,7 +164,7 @@ const Sidebar = ({ isOpen, onClose, isMobile }) => {
                         }}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        LOGOUT // EXIT
+                        {(!isMobile && !isOpen) ? null : 'LOGOUT // EXIT'}
                     </button>
                 )}
             </aside>

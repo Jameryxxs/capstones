@@ -1,4 +1,4 @@
-# 🐟 FishLodger: PWA Fish Market Monitoring System
+# 🐟 FishLedger: A Progressive Web App Fish Market Monitoring System with Retailer Information, Supply Source Identification, Automated Report Generation, and Predictive Analytics for Lucena Fish Port Complex
 
 A Progressive Web App Up-to-Date Fish Market Monitoring System with Retailer Information, Supply Source Identification, Automated Report Generation, and Predictive Analytics for **Lucena Fish Port Complex**.
 

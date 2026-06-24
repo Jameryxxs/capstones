@@ -58,7 +58,7 @@ const Layout = ({ children }) => {
           style={{ 
             flex: 1, 
             padding: isMobile ? '70px 10px 30px' : '80px 40px 40px', 
-            marginLeft: (isAuthPage || isMobile) ? 0 : '240px',
+            marginLeft: (isAuthPage || isMobile) ? 0 : (sidebarOpen ? '240px' : '70px'),
             transition: 'margin 0.3s ease',
             width: '100%',
             boxSizing: 'border-box'
