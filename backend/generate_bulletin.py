@@ -16,7 +16,7 @@ def run():
     # 2. Get AI Predictions
     upcoming_preds = Prediction.objects.filter(prediction_date__gt=today).order_by('prediction_date')[:3]
     if upcoming_preds.exists():
-        prediction_text = "\n".join([f"- {p.fish.fish_name} ({p.prediction_date}): PHP {p.predicted_price} ({p.trend_status})" for p in upcoming_preds])
+        prediction_text = "\n".join([f"- **{p.fish.fish_name}** ({p.prediction_date}): ₱{p.predicted_price} | Expected Volume: {p.predicted_supply}kg | AI Confidence: {int(p.confidence_score * 100)}%" for p in upcoming_preds])
     else:
         prediction_text = "- AI is processing 7-day forecasts."
 

@@ -162,7 +162,7 @@ const Navbar = ({ onToggleSidebar, isMobile, isAuthPage }) => {
                     fontWeight: '800',
                     textTransform: 'uppercase'
                 }}>
-                    Fish<span style={{ color: 'var(--accent-cyan)' }}>Lodger</span>
+                    Fish<span style={{ color: 'var(--accent-cyan)' }}>Ledger</span>
                 </h2>
             </Link>
             

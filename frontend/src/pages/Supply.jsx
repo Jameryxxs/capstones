@@ -13,6 +13,7 @@ const Supply = () => {
     const [statusFilter, setStatusFilter] = useState('all');
 
     const [formData, setFormData] = useState({
+        supplier_type: 'vessel',
         supplier_name: '',
         boat_name: '',
         fishing_location: '',
@@ -50,6 +51,7 @@ const Supply = () => {
             const res = await supplyApi.create(payload);
             setSuppliers([res.data, ...suppliers]);
             setFormData({
+                supplier_type: 'vessel',
                 supplier_name: '',
                 boat_name: '',
                 fishing_location: '',
@@ -92,8 +94,25 @@ const Supply = () => {
     ];
 
     const supplierColumns = [
+        { 
+            header: 'Type', 
+            accessor: 'supplier_type',
+            render: (row) => (
+                <span style={{ 
+                    padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold',
+                    background: row.supplier_type === 'vessel' ? 'rgba(52, 152, 219, 0.1)' : 'rgba(46, 204, 113, 0.1)',
+                    color: row.supplier_type === 'vessel' ? 'var(--secondary-blue)' : 'var(--success-green)'
+                }}>
+                    {row.supplier_type === 'vessel' ? '🚢 VESSEL' : '🚛 EXTERNAL'}
+                </span>
+            )
+        },
         { header: 'Supplier Name', accessor: 'supplier_name' },
-        { header: 'Boat Name', accessor: 'boat_name' },
+        { 
+            header: 'Vehicle / Boat', 
+            accessor: 'boat_name',
+            render: (row) => row.boat_name ? row.boat_name : <span style={{ color: 'var(--text-muted)' }}>N/A</span>
+        },
         { 
             header: 'Status', 
             accessor: 'status',
@@ -149,7 +168,7 @@ const Supply = () => {
 
     const filteredSuppliers = suppliers.filter(s => {
         const matchesSearch = s.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              s.boat_name.toLowerCase().includes(searchQuery.toLowerCase());
+                              (s.boat_name && s.boat_name.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -165,20 +184,42 @@ const Supply = () => {
 
             <Card title="Add New Supplier" style={{ marginBottom: '30px', padding: isMobile ? '15px' : '25px' }}>
                 <form onSubmit={handleAddSupplier} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '15px' }}>
+                    <div style={{ gridColumn: isMobile ? '1' : '1 / span 3' }}>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Supplier Type *</label>
+                        <select 
+                            required 
+                            value={formData.supplier_type} 
+                            onChange={e => {
+                                const t = e.target.value;
+                                setFormData({
+                                    ...formData, 
+                                    supplier_type: t, 
+                                    status: t === 'vessel' ? 'at_sea' : 'in_transit',
+                                    boat_name: ''
+                                });
+                            }}
+                            style={{ padding: '10px', width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-industrial)' }}
+                        >
+                            <option value="vessel">Fishing Vessel 🚢</option>
+                            <option value="external">External Supplier (Land Transport) 🚛</option>
+                        </select>
+                    </div>
                     <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Supplier Name *</label>
                         <input required type="text" value={formData.supplier_name} onChange={e => setFormData({...formData, supplier_name: e.target.value})} />
                     </div>
-                    <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Boat Name *</label>
-                        <input required type="text" value={formData.boat_name} onChange={e => setFormData({...formData, boat_name: e.target.value})} />
-                    </div>
+                    {formData.supplier_type === 'vessel' && (
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Boat Name *</label>
+                            <input required type="text" value={formData.boat_name} onChange={e => setFormData({...formData, boat_name: e.target.value})} />
+                        </div>
+                    )}
                     <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Contact Number *</label>
                         <input required type="text" value={formData.contact_number} onChange={e => setFormData({...formData, contact_number: e.target.value})} />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Fishing Location *</label>
+                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>{formData.supplier_type === 'vessel' ? 'Fishing Location' : 'Origin Place / Municipality'} *</label>
                         <select required value={formData.fishing_location} onChange={e => setFormData({...formData, fishing_location: e.target.value})}>
                             <option value="">Select a location...</option>
                             {locations.map(loc => (
@@ -189,9 +230,10 @@ const Supply = () => {
                     <div>
                         <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '5px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Status *</label>
                         <select required value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}>
-                            <option value="at_sea">At Sea</option>
+                            {formData.supplier_type === 'vessel' && <option value="at_sea">At Sea</option>}
                             <option value="in_transit">In Transit</option>
-                            <option value="docked">Docked</option>
+                            {formData.supplier_type === 'vessel' && <option value="docked">Docked</option>}
+                            {formData.supplier_type === 'external' && <option value="arrived">Arrived</option>}
                         </select>
                     </div>
                     <div>
@@ -225,6 +267,7 @@ const Supply = () => {
                             <option value="at_sea">At Sea</option>
                             <option value="in_transit">In Transit</option>
                             <option value="docked">Docked</option>
+                            <option value="arrived">Arrived</option>
                         </select>
                     </div>
                     {filteredSuppliers.length === 0 ? (

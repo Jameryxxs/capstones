@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import Card from '../components/Card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie } from 'recharts';
 import LoadingSpinner from '../components/LoadingSpinner';
 import BulletinBoard from '../components/BulletinBoard';
 
@@ -125,6 +125,31 @@ const Dashboard = () => {
                 </div>
             </div>
             
+            {(() => {
+                if (!publicData || !publicData.seasonal_fish || publicData.seasonal_fish.length === 0) return null;
+                const bestFish = publicData.seasonal_fish.find(f => f.trend === 'Decrease') || publicData.seasonal_fish[0];
+                return (
+                    <div className="animate-fade-in-up" style={{ 
+                        background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(52, 152, 219, 0.1) 100%)',
+                        border: '1px solid var(--success-green)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '15px 20px',
+                        marginBottom: '30px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '15px'
+                    }}>
+                        <span style={{ fontSize: '2rem' }}>🔥</span>
+                        <div>
+                            <h3 style={{ margin: '0 0 5px 0', color: 'var(--success-green)', fontSize: '1.1rem' }}>Today's Best Value: {bestFish.fish_name}</h3>
+                            <p style={{ margin: 0, color: 'var(--text-main)', fontSize: '0.85rem' }}>
+                                Highly abundant in the port right now. Prices are trending {bestFish.trend.toLowerCase()} to <strong style={{ color: 'var(--accent-cyan)' }}>₱{bestFish.current_price.toFixed(2)}/kg</strong>!
+                            </p>
+                        </div>
+                    </div>
+                );
+            })()}
+
             <div className="animate-fade-in-up delay-1" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
@@ -137,9 +162,31 @@ const Dashboard = () => {
                     <p style={{ margin: 0, color: 'var(--success-green)', fontSize: '0.75rem', fontWeight: 'bold' }}>✓ DATABASE SYNCED</p>
                 </Card>
                 <Card interactive style={{ borderTop: '4px solid var(--success-green)' }}>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>ACTIVE RETAILERS</p>
-                    <h2 style={{ margin: '10px 0', fontSize: '2.5rem', color: 'var(--text-main)' }}>{stats.active_retailers}</h2>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>Verified stall operations</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '800', letterSpacing: '1px' }}>PORT ACTIVITY</p>
+                            <h2 style={{ margin: '10px 0', fontSize: '2rem', color: 'var(--text-main)' }}>
+                                {stats.active_retailers > 20 ? '🟢 VERY BUSY' : stats.active_retailers > 10 ? '🟡 MODERATE' : '🔴 QUIET'}
+                            </h2>
+                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.75rem' }}>{stats.active_retailers} Stalls Currently Open</p>
+                        </div>
+                        <button 
+                            onClick={() => window.location.href = '/market-map'}
+                            style={{
+                                padding: '8px 12px',
+                                background: 'var(--accent-cyan)',
+                                color: 'var(--primary-navy)',
+                                border: 'none',
+                                borderRadius: 'var(--radius-sm)',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 10px rgba(100, 255, 218, 0.3)'
+                            }}
+                        >
+                            📍 FIND A STALL
+                        </button>
+                    </div>
                 </Card>
                 
                 {weather && (
@@ -223,46 +270,7 @@ const Dashboard = () => {
                 </div>
             )}
             
-            <div className="animate-fade-in-up delay-3" style={{ 
-                display: 'grid', 
-                gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', 
-                gap: '20px',
-                marginBottom: '30px'
-            }}>
-                <Card title="Market Price Index">
-                    <div style={{ height: isMobile ? '250px' : '300px', width: '100%' }}>
-                        <ResponsiveContainer>
-                            <LineChart data={stats.price_trends}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
-                                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
-                                <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
-                                <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', color: 'var(--text-main)' }} />
-                                <Line type="stepAfter" dataKey="price" stroke="var(--accent-cyan)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent-cyan)' }} />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-
-                <Card title="Species Volume Distribution (%)">
-                    <div style={{ height: isMobile ? '250px' : '300px', width: '100%' }}>
-                        <ResponsiveContainer>
-                            <BarChart data={stats.top_species_by_volume} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--border-industrial)" />
-                                <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
-                                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-main)', fontWeight: 'bold' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
-                                <Tooltip formatter={(value) => `${value}%`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', color: 'var(--text-main)', borderRadius: 'var(--radius-sm)', fontWeight: 'bold' }} cursor={{ fill: 'rgba(100, 255, 218, 0.05)' }} />
-                                <Bar dataKey="percentage" radius={[0, 4, 4, 0]} barSize={isMobile ? 20 : 30}>
-                                    {stats.top_species_by_volume && stats.top_species_by_volume.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={['#64ffda', '#3498db', '#ff9f43', '#ff6b6b', '#10ac84'][index % 5]} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </Card>
-            </div>
-            
-            {publicData && (
+{publicData && (
                 <>
                     {/* AI Market Outlook */}
                     <div className="animate-fade-in-up delay-4">
@@ -323,7 +331,93 @@ const Dashboard = () => {
                 </>
             )}
 
-            <div className="animate-fade-in-up delay-7" style={{ 
+            <div className="animate-fade-in-up delay-3" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr', 
+                gap: '20px',
+                marginBottom: '30px'
+            }}>
+                <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Market Price Index <span title="Shows how the average price of all fish has changed over the past 30 days." style={{ cursor: 'help', fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>(?)</span></div>}>
+                    <div style={{ height: isMobile ? '250px' : '300px', width: '100%' }}>
+                        <ResponsiveContainer>
+                            <LineChart data={stats.price_trends}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-industrial)" />
+                                <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
+                                <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={{ stroke: 'var(--border-industrial)' }} />
+                                <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', color: 'var(--text-main)' }} />
+                                <Line type="stepAfter" dataKey="price" stroke="var(--accent-cyan)" strokeWidth={2} dot={{ r: 4, fill: 'var(--accent-cyan)' }} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+
+                <Card title={<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Species Volume Distribution <span title="Shows the percentage of each fish type currently available in the port." style={{ cursor: 'help', fontSize: '0.8rem', color: 'var(--accent-cyan)' }}>(?)</span></div>}>
+                    <div style={{ height: isMobile ? '250px' : '300px', width: '100%' }}>
+                        <ResponsiveContainer>
+                            <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                                <Tooltip formatter={(value) => `${value.toFixed(1)}%`} contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border-industrial)', color: 'var(--text-main)', borderRadius: 'var(--radius-sm)' }} />
+                                <Pie 
+                                    data={stats.top_species_by_volume} 
+                                    dataKey="percentage" 
+                                    nameKey="name" 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    innerRadius={isMobile ? 50 : 80} 
+                                    outerRadius={isMobile ? 80 : 110} 
+                                    paddingAngle={5}
+                                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    labelLine={false}
+                                >
+                                    {stats.top_species_by_volume && stats.top_species_by_volume.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#64ffda', '#3498db', '#ff9f43', '#ff6b6b', '#10ac84'][index % 5]} />
+                                    ))}
+                                </Pie>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                    {stats.top_species_by_volume && stats.top_species_by_volume.length > 0 && (
+                        <p style={{ textAlign: 'center', margin: '10px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                            💡 {stats.top_species_by_volume[0].name} makes up the majority of today's supply ({stats.top_species_by_volume[0].percentage.toFixed(0)}%).
+                        </p>
+                    )}
+                </Card>
+            </div>
+            
+            <div className="animate-fade-in-up delay-3" style={{ marginBottom: '30px' }}>
+                <Card title="Average Price by Species (Last 30 Days)">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' }}>
+                        {stats.species_prices && stats.species_prices.map((species, i) => (
+                            <div key={i} className="interactive-card" style={{ 
+                                padding: '20px 15px', 
+                                borderRadius: 'var(--radius-md)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center'
+                            }}>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px' }}>{species.name}</span>
+                                <span style={{ fontSize: '1.6rem', color: 'var(--primary-navy)', fontWeight: '800', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>₱</span>
+                                    {species.price.toFixed(2)}
+                                </span>
+                                <span style={{ 
+                                    fontSize: '0.65rem', 
+                                    padding: '4px 12px', 
+                                    borderRadius: '20px',
+                                    background: species.category === 'freshwater' ? 'rgba(79, 70, 229, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                                    border: `1px solid ${species.category === 'freshwater' ? 'rgba(79, 70, 229, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                                    color: species.category === 'freshwater' ? 'var(--accent-cyan)' : 'var(--success-green)',
+                                    textTransform: 'uppercase',
+                                    fontWeight: 'bold',
+                                    letterSpacing: '1px'
+                                }}>{species.category}</span>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
+            </div>
+            
+                        <div className="animate-fade-in-up delay-7" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: '1fr', 
                 gap: '20px',

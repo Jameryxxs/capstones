@@ -1,11 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
+import mainLogo from '../logo.svg';
+import heroBackground from '../Gemini_Generated_Image_qjmdcgqjmdcgqjmd.png';
 
 const Landing = () => {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [publicData, setPublicData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    const slides = [
+        '/carousell/slide1.png',
+        '/carousell/slide2.png',
+        '/carousell/slide3.png',
+        '/carousell/slide4.png',
+        '/carousell/slide5.png'
+    ];
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide(prev => (prev + 1) % slides.length);
+        }, 4000);
+        return () => clearInterval(timer);
+    }, [slides.length]);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -41,46 +59,56 @@ const Landing = () => {
             <section style={{ 
                 textAlign: 'center', 
                 padding: isMobile ? '60px 15px' : '100px 20px 80px',
-                background: 'radial-gradient(circle at top, rgba(79, 70, 229, 0.05) 0%, var(--bg-main) 70%)',
+                backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.85), rgba(240, 249, 255, 0.95)), url(${heroBackground})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
                 color: 'var(--text-main)',
-                borderBottom: '1px solid var(--border-industrial)',
                 position: 'relative'
             }}>
-                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    {/* Glowing Capstone Badge */}
-                    <div style={{ 
-                        display: 'inline-flex',
+                <div style={{ 
+                    maxWidth: '1000px', 
+                    margin: '0 auto',
+                    padding: isMobile ? '0' : '20px'
+                }}>
+                    {/* Logo Section */}
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        gap: '8px',
-                        padding: '6px 16px',
-                        background: 'rgba(79, 70, 229, 0.08)',
-                        color: 'var(--accent-cyan)',
-                        fontSize: '0.75rem',
-                        fontWeight: '800',
-                        letterSpacing: '1.5px',
-                        textTransform: 'uppercase',
-                        borderRadius: '30px',
-                        marginBottom: '25px',
-                        border: '1px solid rgba(79, 70, 229, 0.2)',
-                        boxShadow: '0 4px 10px rgba(79, 70, 229, 0.05)'
+                        marginBottom: '30px'
                     }}>
-                        <span>🐟</span> LUCENA FISH PORT COMPLEX PLATFORM
+                        <img 
+                            src={mainLogo} 
+                            alt="FishLedger Logo" 
+                            style={{
+                                width: isMobile ? '120px' : '160px',
+                                height: 'auto',
+                                marginBottom: '20px'
+                            }} 
+                        />
+                        
+                        <div style={{
+                            fontSize: isMobile ? '0.9rem' : '1.2rem',
+                            fontWeight: '800',
+                            letterSpacing: '4px',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            marginBottom: '10px'
+                        }}>
+                            Lucena Fish Port Complex
+                        </div>
+                        
+                        <h1 style={{ 
+                            fontSize: isMobile ? '3rem' : '5.5rem', 
+                            margin: '0 0 15px 0', 
+                            letterSpacing: '-2px',
+                            lineHeight: '1.1',
+                            fontWeight: '900',
+                            color: 'var(--text-main)'
+                        }}>
+                            FISHLEDGER
+                        </h1>
                     </div>
-                    
-                    <h1 style={{ 
-                        fontSize: isMobile ? '2.2rem' : '4.2rem', 
-                        color: 'var(--text-main)', 
-                        marginBottom: '20px', 
-                        letterSpacing: '-1.5px',
-                        lineHeight: '1.1',
-                        fontWeight: '800'
-                    }}>
-                        FISHLEDGER // <span style={{ 
-                            background: 'linear-gradient(90deg, var(--accent-cyan) 0%, #3498db 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}>PORT MONITORING</span>
-                    </h1>
                     
                     <h2 style={{ 
                         fontSize: isMobile ? '0.95rem' : '1.25rem', 
@@ -143,43 +171,61 @@ const Landing = () => {
                         </Link>
                     </div>
 
-                    {/* High-Fidelity Dashboard Mockup Card */}
+                    {/* Auto-Swiping Carousel */}
                     <div style={{
-                        background: 'rgba(255, 255, 255, 0.7)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid var(--border-industrial)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: '15px',
-                        maxWidth: '850px',
+                        width: '100%',
+                        maxWidth: '1000px',
                         margin: '0 auto',
-                        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.05)',
-                        textAlign: 'left'
-                    }}>
-                        {/* Browser Header Bar */}
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '15px', borderBottom: '1px solid var(--border-industrial)', paddingBottom: '10px', alignItems: 'center' }}>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }}></div>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }}></div>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }}></div>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '10px', fontWeight: 'bold', letterSpacing: '0.5px' }}>LUCENA_PORT_COMMAND_CENTER // LIVE_FEED</span>
-                        </div>
+                        position: 'relative',
+                        borderRadius: 'var(--radius-lg)',
+                        overflow: 'hidden',
+                        aspectRatio: '16/9',
+                        cursor: 'pointer',
+                        background: 'var(--bg-main)'
+                    }}
+                    onClick={() => setCurrentSlide((currentSlide + 1) % slides.length)}
+                    >
+                        {slides.map((slide, index) => (
+                            <div 
+                                key={index}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    opacity: index === currentSlide ? 1 : 0,
+                                    transition: 'opacity 0.8s ease-in-out',
+                                    backgroundImage: `url(${slide})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                }}
+                            />
+                        ))}
                         
-                        {/* Mock Widgets Grid */}
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
-                            <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
-                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>📡 Weather Alert</span>
-                                <p style={{ margin: '5px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>29.4°C | Light Rain</p>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Wind: 3.2 m/s (Normal Operations)</span>
-                            </div>
-                            <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
-                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>🚢 Live ETA</span>
-                                <p style={{ margin: '5px 0 0', fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--accent-cyan)' }}>F/B Venture 422</p>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>14m remaining (Tayabas Bay)</span>
-                            </div>
-                            <div style={{ background: '#ffffff', border: '1px solid #e4e4e7', borderRadius: 'var(--radius-sm)', padding: '12px' }}>
-                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 'bold', textTransform: 'uppercase' }}>📈 Predictive Trend</span>
-                                <p style={{ margin: '5px 0 0', fontWeight: 'bold', fontSize: '0.85rem' }}>Galunggong Forecast</p>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--success-green)', fontWeight: 'bold' }}>✓ Stable Price Trend (₱210.00)</span>
-                            </div>
+                        {/* Carousel Indicators */}
+                        <div style={{
+                            position: 'absolute',
+                            bottom: '20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            gap: '10px'
+                        }}>
+                            {slides.map((_, index) => (
+                                <div 
+                                    key={index}
+                                    onClick={(e) => { e.stopPropagation(); setCurrentSlide(index); }}
+                                    style={{
+                                        width: index === currentSlide ? '30px' : '10px',
+                                        height: '10px',
+                                        borderRadius: '5px',
+                                        background: index === currentSlide ? 'var(--text-main)' : 'rgba(0, 0, 0, 0.15)',
+                                        transition: 'all 0.3s ease',
+                                        cursor: 'pointer'
+                                    }}
+                                />
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -223,14 +269,14 @@ const Landing = () => {
                                 <tbody>
                                     {publicData.prices.map(fish => (
                                         <tr key={fish.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                            <td style={{ padding: '15px 20px', fontWeight: 'bold', color: 'var(--text-main)' }}>{fish.fish_name}</td>
+                                            <td style={{ padding: '15px 20px', fontWeight: '600', color: 'var(--text-main)' }}>{fish.fish_name}</td>
                                             <td style={{ padding: '15px 20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{fish.category}</td>
-                                            <td style={{ padding: '15px 20px', color: 'var(--accent-cyan)', fontWeight: 'bold' }}>₱{fish.current_price.toFixed(2)} / kg</td>
+                                            <td style={{ padding: '15px 20px', color: 'var(--accent-cyan)', fontWeight: '600' }}>₱{fish.current_price.toFixed(2)} / kg</td>
                                             <td style={{ padding: '15px 20px', fontSize: '0.85rem' }}>
                                                 {fish.trend === 'Increase' ? (
-                                                    <span style={{ color: 'var(--fail-red)', fontWeight: 'bold' }}>↑ +₱{fish.trend_value.toFixed(2)}</span>
+                                                    <span style={{ color: 'var(--danger-red)', fontWeight: '600' }}>↑ +₱{fish.trend_value.toFixed(2)}</span>
                                                 ) : fish.trend === 'Decrease' ? (
-                                                    <span style={{ color: 'var(--success-green)', fontWeight: 'bold' }}>↓ -₱{Math.abs(fish.trend_value).toFixed(2)}</span>
+                                                    <span style={{ color: 'var(--success-green)', fontWeight: '600' }}>↓ -₱{Math.abs(fish.trend_value).toFixed(2)}</span>
                                                 ) : (
                                                     <span style={{ color: 'var(--text-muted)' }}>— Stable</span>
                                                 )}
@@ -275,7 +321,10 @@ const Landing = () => {
                         <div key={i} style={{ 
                             padding: '30px', 
                             textAlign: 'left',
-                            position: 'relative'
+                            position: 'relative',
+                            background: 'transparent',
+                            border: 'none',
+                            boxShadow: 'none'
                         }}
                         className="interactive-card"
                         >
@@ -285,7 +334,7 @@ const Landing = () => {
                                 top: '20px',
                                 fontSize: '2.5rem',
                                 fontWeight: '900',
-                                color: 'rgba(79, 70, 229, 0.05)',
+                                color: 'rgba(14, 165, 233, 0.2)',
                                 userSelect: 'none',
                                 pointerEvents: 'none'
                             }}>{pillar.icon}</div>
@@ -293,7 +342,7 @@ const Landing = () => {
                                 marginBottom: '14px', 
                                 fontSize: '1.05rem', 
                                 color: 'var(--text-main)',
-                                fontWeight: '800'
+                                fontWeight: '700'
                             }}>{pillar.title}</h3>
                             <p style={{ 
                                 color: 'var(--text-muted)', 

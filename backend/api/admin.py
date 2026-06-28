@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from simple_history.admin import SimpleHistoryAdmin
 from .models import (
     User, Fish, Retailer, FishPrice, FishingLocation, 
     SupplySource, Inventory, FishDelivery, Report, 
-    Prediction, Notification, Bulletin
+    Prediction, Notification, Bulletin, AccountApplication
 )
 
 @admin.register(Bulletin)
@@ -12,7 +13,7 @@ class BulletinAdmin(admin.ModelAdmin):
     list_filter = ('category', 'is_active')
 
 @admin.register(User)
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(SimpleHistoryAdmin, UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         (None, {'fields': ('role', 'phone_number')}),
     )
@@ -34,7 +35,7 @@ class RetailerAdmin(admin.ModelAdmin):
     list_filter = ('status',)
 
 @admin.register(FishPrice)
-class FishPriceAdmin(admin.ModelAdmin):
+class FishPriceAdmin(SimpleHistoryAdmin):
     list_display = ('fish', 'retailer', 'price_per_kilo', 'market_date')
     list_filter = ('market_date', 'fish')
 
@@ -47,12 +48,12 @@ class SupplySourceAdmin(admin.ModelAdmin):
     list_display = ('supplier_name', 'boat_name', 'fishing_location', 'arrival_date')
 
 @admin.register(Inventory)
-class InventoryAdmin(admin.ModelAdmin):
+class InventoryAdmin(SimpleHistoryAdmin):
     list_display = ('fish', 'retailer', 'stock_quantity', 'stock_unit', 'availability_status')
     list_filter = ('availability_status', 'retailer')
 
 @admin.register(FishDelivery)
-class FishDeliveryAdmin(admin.ModelAdmin):
+class FishDeliveryAdmin(SimpleHistoryAdmin):
     list_display = ('fish', 'retailer', 'quantity', 'delivery_date', 'delivery_status')
     list_filter = ('delivery_status', 'delivery_date')
 
@@ -70,3 +71,8 @@ class PredictionAdmin(admin.ModelAdmin):
 class NotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'title', 'notification_type', 'is_read', 'created_at')
     list_filter = ('notification_type', 'is_read')
+
+@admin.register(AccountApplication)
+class AccountApplicationAdmin(SimpleHistoryAdmin):
+    list_display = ('full_name', 'requested_role', 'status', 'created_at')
+    list_filter = ('status', 'requested_role')

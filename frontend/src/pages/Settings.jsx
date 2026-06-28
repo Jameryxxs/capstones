@@ -228,7 +228,7 @@ const Settings = () => {
                                 border: '1px solid var(--fail-red)', fontWeight: '800', cursor: 'pointer', borderRadius: '4px' 
                             }}
                         >
-                            RE-ENCRYPT_PASSWORD
+                            RE-ENCRYPT PASSWORD
                         </button>
                     </form>
                 </Card>

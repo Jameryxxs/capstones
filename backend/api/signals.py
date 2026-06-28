@@ -2,7 +2,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from .models import FishPrice, FishDelivery, Bulletin, SupplySource, Inventory, Retailer
+from .models import FishPrice, FishDelivery, Bulletin, SupplySource, Inventory, Retailer, AccountApplication
 
 @receiver(post_delete, sender=FishPrice)
 def sync_inventory_on_price_delete(sender, instance, **kwargs):
@@ -119,6 +119,25 @@ def broadcast_vessel_location(sender, instance, **kwargs):
                     "lng": float(instance.current_lng),
                     "status": instance.status,
                     "origin": instance.fishing_location.location_name
+                }
+            }
+        )
+
+@receiver(post_save, sender=AccountApplication)
+def broadcast_new_application(sender, instance, created, **kwargs):
+    if created:
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "market_updates",
+            {
+                "type": "broadcast_update",
+                "data": {
+                    "type": "NEW_APPLICATION_UPDATE",
+                    "id": instance.id,
+                    "full_name": instance.full_name,
+                    "requested_role": instance.requested_role,
+                    "status": instance.status,
+                    "created_at": instance.created_at.isoformat()
                 }
             }
         )

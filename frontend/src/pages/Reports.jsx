@@ -81,6 +81,17 @@ const Reports = () => {
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
+            
+            // Save to Document Archive
+            api.post('reports/', {
+                report_name: filename,
+                report_type: selectedPeriod,
+                summary: queryParams // Save the params so we can regenerate it later
+            }).then(() => {
+                // Refresh archive list
+                api.get('reports/').then(res => setReports(res.data));
+            });
+
             setDownloading(false);
         }).catch(err => {
             console.error("PDF generation failed", err);
@@ -167,7 +178,7 @@ const Reports = () => {
     return (
         <div className="page-fade-in">
             <div style={{ marginBottom: '30px' }}>
-                <h1 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.5rem' : '2.2rem' }}>Reports & Intelligence</h1>
+                <h1 style={{ margin: 0, color: 'var(--primary-navy)', fontSize: isMobile ? '1.5rem' : '2.2rem' }}>Reports Generation</h1>
                 <p style={{ color: 'var(--text-muted)' }}>Generate customized market summaries and official documentation</p>
             </div>
 
@@ -228,10 +239,27 @@ const Reports = () => {
                         {reports.length > 0 ? reports.map(report => (
                             <div key={report.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 0', borderBottom: '1px solid var(--border-industrial)' }}>
                                 <div>
-                                    <h5 style={{ margin: '0 0 5px', color: 'var(--text-main)', fontSize: '0.9rem' }}>{report.title}</h5>
-                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{report.created_at_formatted || report.created_at}</span>
+                                    <h5 style={{ margin: '0 0 5px', color: 'var(--text-main)', fontSize: '0.9rem' }}>{report.report_name}</h5>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(report.generated_date).toLocaleDateString()} {new Date(report.generated_date).toLocaleTimeString()}</span>
                                 </div>
-                                <button style={{ border: '1px solid var(--secondary-blue)', background: 'transparent', color: 'var(--secondary-blue)', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.75rem' }}>VIEW ARCHIVE</button>
+                                <button 
+                                    onClick={() => {
+                                        if (report.summary) {
+                                            api.get(`bulletin/?${report.summary}`, { responseType: 'blob' })
+                                                .then(response => {
+                                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                                    const link = document.createElement('a');
+                                                    link.href = url;
+                                                    link.setAttribute('download', report.report_name);
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                }).catch(() => alert("Failed to download archived report."));
+                                        }
+                                    }}
+                                    style={{ border: '1px solid var(--accent-cyan)', background: 'rgba(100, 255, 218, 0.1)', color: 'var(--accent-cyan)', padding: '5px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.75rem', transition: 'all 0.2s' }}
+                                >
+                                    VIEW ARCHIVE
+                                </button>
                             </div>
                         )) : (
                             <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '60px' }}>

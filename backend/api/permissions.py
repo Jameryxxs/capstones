@@ -21,13 +21,20 @@ class IsAdminUser(permissions.BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.role == 'admin')
 
+class IsStaffOrAdmin(permissions.BasePermission):
+    """
+    Allows access only to staff or admin users.
+    """
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.role in ['admin', 'staff'])
+
 class IsRetailerOwnerOrAdmin(permissions.BasePermission):
     """
     Custom permission to only allow owners of an object (retailers) or admins to edit it.
     """
     def has_object_permission(self, request, view, obj):
-        # Admin can do anything
-        if request.user.role == 'admin':
+        # Admin and staff can do anything
+        if request.user.role in ['admin', 'staff']:
             return True
         
         # Check if the object has a 'retailer' or 'user' attribute that matches

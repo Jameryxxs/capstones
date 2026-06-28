@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Card from '../components/Card';
 import api from '../api';
 import Table from '../components/Table';
@@ -12,8 +12,10 @@ const Prices = () => {
     // Default to empty string instead of strictly today so it fetches all recent prices
     const [selectedDate, setSelectedDate] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [fishes, setFishes] = useState([]);
     const [minPrice, setMinPrice] = useState('');
     const [maxPrice, setMaxPrice] = useState('');
+    const [newPriceIds, setNewPriceIds] = useState([]); // Track newly arrived prices for glow
 
     const fetchPrices = () => {
         setLoading(true);
@@ -38,19 +40,127 @@ const Prices = () => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
 
-        fetchPrices();
+        api.get('fish/')
+            .then(res => setFishes(res.data))
+            .catch(err => console.error("Failed to fetch fishes", err));
 
-        return () => window.removeEventListener('resize', handleResize);
+        // WebSocket for Real-time Price Updates
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.hostname}:8000/ws/updates/`;
+        const socket = new WebSocket(wsUrl);
+
+        socket.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'PRICE_UPDATE') {
+                    // Refetch prices to update the table instantly
+                    setLoading(true);
+                    const params = new URLSearchParams();
+                    if (selectedDate) params.append('date', selectedDate);
+                    if (searchQuery) params.append('search', searchQuery);
+                    if (minPrice) params.append('min_price', minPrice);
+                    if (maxPrice) params.append('max_price', maxPrice);
+
+                    api.get(`fish-prices/?${params.toString()}`)
+                        .then(res => {
+                            setPrices(res.data);
+                            setLoading(false);
+                            
+                            // Find the newly added price ID by comparing (assuming highest ID is newest)
+                            if (res.data.length > 0) {
+                                const newId = Math.max(...res.data.map(p => p.id));
+                                setNewPriceIds(prev => [...prev, newId]);
+                                setTimeout(() => {
+                                    setNewPriceIds(prev => prev.filter(id => id !== newId));
+                                }, 10000);
+                            }
+                        });
+                }
+            } catch (err) {
+                console.error("WebSocket message error:", err);
+            }
+        };
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (socket.readyState === 1) socket.close();
+        };
+    }, [selectedDate, searchQuery, minPrice, maxPrice]);
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchPrices();
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [searchQuery, selectedDate, minPrice, maxPrice]);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchPrices();
-    };
+    const averageStats = useMemo(() => {
+        if (!prices || prices.length === 0) return null;
+
+        if (searchQuery) {
+            const sumPrice = prices.reduce((acc, p) => acc + parseFloat(p.price_per_kilo || 0), 0);
+            const avgPrice = (sumPrice / prices.length).toFixed(2);
+            
+            const sumVol = prices.reduce((acc, p) => acc + parseFloat(p.quantity_available || 0), 0);
+            const avgVol = (sumVol / prices.length).toFixed(2);
+
+            return {
+                price: { label: `Average Price for ${searchQuery}`, value: `₱ ${avgPrice}` },
+                volume: { label: `Average Volume for ${searchQuery}`, value: `${avgVol} kg` }
+            };
+        } else {
+            const speciesGroups = {};
+            prices.forEach(p => {
+                if (!speciesGroups[p.fish_name]) speciesGroups[p.fish_name] = { prices: [], volumes: [] };
+                speciesGroups[p.fish_name].prices.push(parseFloat(p.price_per_kilo || 0));
+                speciesGroups[p.fish_name].volumes.push(parseFloat(p.quantity_available || 0));
+            });
+            
+            let lowestSpecies = '';
+            let lowestAveragePrice = Infinity;
+
+            for (const [species, data] of Object.entries(speciesGroups)) {
+                const avgP = data.prices.reduce((a, b) => a + b, 0) / data.prices.length;
+                if (avgP < lowestAveragePrice) {
+                    lowestAveragePrice = avgP;
+                    lowestSpecies = species;
+                }
+            }
+            
+            let avgVolForLowestSpecies = 0;
+            if (lowestSpecies && speciesGroups[lowestSpecies]) {
+                const vols = speciesGroups[lowestSpecies].volumes;
+                avgVolForLowestSpecies = vols.reduce((a, b) => a + b, 0) / vols.length;
+            }
+            
+            return {
+                price: lowestAveragePrice !== Infinity ? {
+                    label: `Lowest Average Price (${lowestSpecies})`,
+                    value: `₱ ${lowestAveragePrice.toFixed(2)}`
+                } : null,
+                volume: lowestAveragePrice !== Infinity ? {
+                    label: `Average Volume (${lowestSpecies})`,
+                    value: `${avgVolForLowestSpecies.toFixed(2)} kg`
+                } : null
+            };
+        }
+    }, [prices, searchQuery]);
 
     const columns = [
-        { header: 'Fish Species', accessor: 'fish_name' },
+        { 
+            header: 'Fish Species', 
+            accessor: 'fish_name',
+            render: (row) => (
+                <div style={{ fontWeight: 'bold' }}>
+                    {row.fish_name}
+                    {newPriceIds.includes(row.id) && (
+                        <span style={{fontSize:'0.6rem', background:'var(--accent-cyan)', color:'#000', padding:'2px 5px', borderRadius:'4px', marginLeft:'5px'}}>NEW UPDATE</span>
+                    )}
+                </div>
+            )
+        },
         { 
             header: 'Category', 
             accessor: 'fish_category',
@@ -84,16 +194,19 @@ const Prices = () => {
             </div>
 
             <Card style={{ padding: isMobile ? '15px' : '25px', marginBottom: '20px' }}>
-                <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '15px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                     <div style={{ flex: '1 1 200px' }}>
-                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Species Search:</label>
-                        <input 
-                            type="text" 
-                            placeholder="e.g. Bangus, Tilapia"
+                        <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Filter by Species:</label>
+                        <select 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             style={{ width: '100%', padding: '10px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
-                        />
+                        >
+                            <option value="">All Species</option>
+                            {fishes.map(f => (
+                                <option key={f.id} value={f.fish_name}>{f.fish_name}</option>
+                            ))}
+                        </select>
                     </div>
                     
                     <div style={{ flex: '1 1 150px' }}>
@@ -127,13 +240,24 @@ const Prices = () => {
                             style={{ width: '100%', padding: '10px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)', outline: 'none' }}
                         />
                     </div>
+                </div>
 
-                    <div style={{ flex: '0 0 auto', width: isMobile ? '100%' : 'auto' }}>
-                        <button type="submit" style={{ width: '100%', padding: '10px 20px', backgroundColor: 'var(--accent-cyan)', color: 'white', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: 'bold', cursor: 'pointer' }}>
-                            Search
-                        </button>
+                {averageStats && (
+                    <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid var(--border-industrial)', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '30px', flexWrap: 'wrap' }}>
+                        {averageStats.price && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{averageStats.price.label}:</span>
+                                <span style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--success-green)' }}>{averageStats.price.value}</span>
+                            </div>
+                        )}
+                        {averageStats.volume && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ color: 'var(--text-muted)', fontWeight: 'bold' }}>{averageStats.volume.label}:</span>
+                                <span style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--accent-cyan)' }}>{averageStats.volume.value}</span>
+                            </div>
+                        )}
                     </div>
-                </form>
+                )}
             </Card>
 
             <Card style={{ padding: isMobile ? '10px' : '25px', minHeight: '300px' }}>
@@ -144,13 +268,14 @@ const Prices = () => {
                 ) : prices.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
                         <h3>No prices found.</h3>
-                        <p>Try adjusting your search criteria or clearing the date to view older records.</p>
+                        <p>Try adjusting your filter criteria or clearing the date to view older records.</p>
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
                         <Table 
                             columns={isMobile ? columns.slice(0, 3) : columns} 
                             data={prices} 
+                            rowStyle={(row) => newPriceIds.includes(row.id) ? { animation: 'pulseGlow 2s infinite', background: 'rgba(100, 255, 218, 0.1)' } : {}}
                         />
                     </div>
                 )}

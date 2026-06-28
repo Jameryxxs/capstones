@@ -19,6 +19,8 @@ import MarketMap from './pages/MarketMap';
 import MyProducts from './pages/MyProducts';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Applications from './pages/Applications';
+import StaffManagement from './pages/StaffManagement';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -91,6 +93,8 @@ function App() {
           <Route path="/bulletin-management" element={<BulletinManagement />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/applications" element={<Applications />} />
+          <Route path="/staff-management" element={<StaffManagement />} />
         </Routes>
       </Layout>
     </Router>

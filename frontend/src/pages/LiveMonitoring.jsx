@@ -321,12 +321,15 @@ const LiveMonitoring = () => {
                                             width: 32px;
                                             height: 32px;
                                             background: var(--bg-card);
-                                            border: 2px solid var(--accent-cyan);
-                                            border-radius: 50%;
+                                            border: 2px solid ${boat.type === 'external' ? 'var(--success-green)' : 'var(--accent-cyan)'};
+                                            border-radius: ${boat.type === 'external' ? '6px' : '50%'};
                                             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-                                            transform: rotate(${boat.status === 'in_transit' ? '45deg' : '0deg'});
+                                            transform: rotate(${boat.status === 'in_transit' && boat.type !== 'external' ? '45deg' : '0deg'});
                                         ">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent-cyan)" stroke="var(--primary-navy)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 3.2-1.5 5.5-1.5 2.3 0 3 1.5 5.5 1.5 1.3 0 1.9-.5 2.5-1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>
+                                            ${boat.type === 'external' ? 
+                                            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--success-green)" stroke="var(--primary-navy)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>' : 
+                                            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="var(--accent-cyan)" stroke="var(--primary-navy)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 3.2-1.5 5.5-1.5 2.3 0 3 1.5 5.5 1.5 1.3 0 1.9-.5 2.5-1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>'
+                                            }
                                         </div>`,
                                         iconSize: [30, 30],
                                         iconAnchor: [15, 15]

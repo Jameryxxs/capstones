@@ -11,6 +11,7 @@ const MyProducts = () => {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
     
     // Form State
     const [formData, setFormData] = useState({
@@ -49,44 +50,14 @@ const MyProducts = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            if (editingId) {
-                const res = await priceApi.update(editingId, formData);
-                setMyPrices(myPrices.map(p => p.id === editingId ? res.data : p));
-                setEditingId(null);
-            } else {
-                const res = await priceApi.create(formData);
-                setMyPrices([res.data, ...myPrices]);
-            }
-            setFormData({
-                fish: '',
-                price_per_kilo: '',
-                quantity_available: '',
-                market_date: new Date().toISOString().split('T')[0],
-                remarks: ''
-            });
-            setSubmitting(false);
-        } catch (err) {
-            console.error(err);
-            const errorMsg = err.response?.data ? 
-                Object.entries(err.response.data).map(([field, msgs]) => `${field.toUpperCase()}: ${msgs.join(', ')}`).join(' | ') : 
-                'Failed to save product. Please check your inputs.';
-            alert(errorMsg);
-            setSubmitting(false);
-        }
-    };
-
-    const handleEdit = (product) => {
-        setEditingId(product.id);
+    const handleEdit = (price) => {
+        setEditingId(price.id);
         setFormData({
-            fish: product.fish,
-            price_per_kilo: product.price_per_kilo,
-            quantity_available: product.quantity_available,
-            market_date: product.market_date,
-            remarks: product.remarks || ''
+            fish: price.fish,
+            price_per_kilo: price.price_per_kilo,
+            quantity_available: price.quantity_available,
+            market_date: price.market_date,
+            remarks: price.remarks || ''
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -102,6 +73,32 @@ const MyProducts = () => {
         });
     };
 
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        setError('');
+
+        try {
+            if (editingId) {
+                await priceApi.update(editingId, formData);
+                alert('Product updated successfully!');
+            } else {
+                await priceApi.create(formData);
+                alert('Product added successfully!');
+            }
+            
+            // Refresh
+            const res = await priceApi.getMine();
+            setMyPrices(res.data);
+            handleCancelEdit();
+        } catch (err) {
+            console.error(err);
+            setError('Failed to save product. Please check your inputs.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product entry?')) return;
         
@@ -113,6 +110,13 @@ const MyProducts = () => {
             alert('Failed to delete product.');
         }
     };
+
+    const filteredPrices = myPrices.filter(p => {
+        const query = searchQuery.toLowerCase();
+        return p.fish_name.toLowerCase().includes(query) || 
+               p.category?.toLowerCase().includes(query) ||
+               p.market_date.includes(query);
+    });
 
     if (loading) return <LoadingSpinner size="60px" />;
 
@@ -133,7 +137,7 @@ const MyProducts = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 2fr', gap: '30px', alignItems: 'start' }}>
                 {/* ADD/EDIT PRODUCT FORM */}
                 <Card title={editingId ? "UPDATE EXISTING ENTRY" : "REGISTER NEW ENTRY"}>
                     <form onSubmit={handleSubmit}>
@@ -148,42 +152,39 @@ const MyProducts = () => {
                             >
                                 <option value="">--- SELECT ---</option>
                                 {allFish.map(f => (
-                                    <option key={f.id} value={f.id}>{f.fish_name.toUpperCase()}</option>
+                                    <option key={f.id} value={f.id}>{f.fish_name}</option>
                                 ))}
                             </select>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>PRICE (₱/kg)</label>
-                                <input 
-                                    type="number"
-                                    name="price_per_kilo"
-                                    value={formData.price_per_kilo}
-                                    onChange={handleInputChange}
-                                    required
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    style={{ width: '100%' }}
-                                />
-                            </div>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>STOCK (kg)</label>
-                                <input 
-                                    type="number"
-                                    name="quantity_available"
-                                    value={formData.quantity_available}
-                                    onChange={handleInputChange}
-                                    required
-                                    placeholder="0"
-                                    style={{ width: '100%' }}
-                                />
-                            </div>
-                        </div>
-
                         <div style={{ marginBottom: '15px' }}>
-                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>MARKET DATE</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>PRICE PER KILO (₱)</label>
                             <input 
-                                type="date"
+                                type="number" 
+                                name="price_per_kilo"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={formData.price_per_kilo}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>STOCK VOLUME (kg)</label>
+                            <input 
+                                type="number" 
+                                name="quantity_available"
+                                placeholder="0"
+                                value={formData.quantity_available}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: '100%' }}
+                            />
+                        </div>
+                        <div style={{ marginBottom: '15px' }}>
+                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>DATE POSTED</label>
+                            <input 
+                                type="date" 
                                 name="market_date"
                                 value={formData.market_date}
                                 onChange={handleInputChange}
@@ -191,9 +192,8 @@ const MyProducts = () => {
                                 style={{ width: '100%' }}
                             />
                         </div>
-
                         <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>REMARKS</label>
+                            <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: '800' }}>REMARKS / STATUS</label>
                             <textarea 
                                 name="remarks"
                                 value={formData.remarks}
@@ -254,6 +254,15 @@ const MyProducts = () => {
 
                 {/* PRODUCT LIST */}
                 <Card title="MY CURRENT PRODUCTS">
+                    <div style={{ marginBottom: '20px' }}>
+                        <input 
+                            type="text" 
+                            placeholder="Search my products by name, category, or date..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ width: '100%', padding: '12px', border: '1px solid var(--border-industrial)', borderRadius: 'var(--radius-sm)', outline: 'none', background: 'var(--bg-card)', color: 'var(--text-main)' }}
+                        />
+                    </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-main)', fontSize: '0.85rem' }}>
                             <thead>
@@ -266,7 +275,7 @@ const MyProducts = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {myPrices.length > 0 ? myPrices.map((p) => (
+                                {filteredPrices.length > 0 ? filteredPrices.map((p) => (
                                     <tr key={p.id} style={{ borderBottom: '1px solid var(--border-industrial)' }}>
                                         <td style={{ padding: '15px', fontWeight: 'bold' }}>{p.fish_name}</td>
                                         <td style={{ padding: '15px', color: 'var(--accent-cyan)' }}>₱{parseFloat(p.price_per_kilo).toFixed(2)}</td>
@@ -306,7 +315,7 @@ const MyProducts = () => {
                                 )) : (
                                     <tr>
                                         <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                            NO PRODUCTS REGISTERED YET
+                                            NO PRODUCTS MATCH YOUR SEARCH
                                         </td>
                                     </tr>
                                 )}

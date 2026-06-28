@@ -413,7 +413,14 @@ const MarketMap = () => {
                                                             <span style={{ color: item.stock < 50 ? '#ef4444' : '#22c55e', fontWeight: '800' }}>
                                                                 {item.stock} {item.unit} STOCK
                                                             </span>
-                                                            <span style={{ textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: '600' }}>{item.category}</span>
+                                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                                <span style={{ textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: '600' }}>{item.category}</span>
+                                                                <span style={{ color: 'var(--secondary-blue)', fontWeight: '700', background: 'rgba(52, 152, 219, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                                    {item.origin_type === 'external' 
+                                                                        ? `📍 🏢 SOURCE: ${item.origin || 'LOCAL CATCH'} | 🚛 TRANSPORT: Truck` 
+                                                                        : `📍 🌊 SOURCE: ${item.origin || 'LOCAL CATCH'} | 🚢 TRANSPORT: Vessel`}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                         {item.remarks && (
                                                             <div style={{ 

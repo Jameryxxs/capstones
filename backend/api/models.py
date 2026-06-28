@@ -1,6 +1,7 @@
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from simple_history.models import HistoricalRecords
 
 
 # =====================================================
@@ -19,6 +20,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.username
@@ -81,6 +83,7 @@ class FishPrice(models.Model):
     remarks = models.TextField(blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.fish.fish_name} - ₱{self.price_per_kilo}"
@@ -111,10 +114,16 @@ class SupplySource(models.Model):
         ('at_sea', 'At Sea'),
         ('in_transit', 'In Transit'),
         ('docked', 'Docked'),
+        ('arrived', 'Arrived'),
+    )
+    TYPE_CHOICES = (
+        ('vessel', 'Fishing Vessel'),
+        ('external', 'External Supplier'),
     )
 
+    supplier_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='vessel')
     supplier_name = models.CharField(max_length=255)
-    boat_name = models.CharField(max_length=255)
+    boat_name = models.CharField(max_length=255, blank=True, null=True)
     fishing_location = models.ForeignKey(
         FishingLocation,
         on_delete=models.CASCADE
@@ -145,6 +154,7 @@ class Inventory(models.Model):
         default='Available'
     )
     updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.fish.fish_name} Inventory"
@@ -175,6 +185,7 @@ class FishDelivery(models.Model):
         default='pending'
     )
     remarks = models.TextField(blank=True, null=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.fish.fish_name} Delivery"
@@ -275,3 +286,32 @@ class Bulletin(models.Model):
 
     def __str__(self):
         return self.title
+
+# =====================================================
+# ACCOUNT APPLICATION TABLE
+# =====================================================
+
+class AccountApplication(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    )
+    ROLE_CHOICES = (
+        ('retailer', 'Retailer'),
+        ('supplier', 'Supplier'),
+    )
+
+    full_name = models.CharField(max_length=255)
+    contact_number = models.CharField(max_length=20)
+    email = models.EmailField()
+    business_name = models.CharField(max_length=255, blank=True, null=True)
+    requested_role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    appointment_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return f"{self.full_name} - {self.requested_role} Application"

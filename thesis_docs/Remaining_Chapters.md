@@ -7,12 +7,37 @@ The Lucena Fish Port Complex is a vital hub for fish distribution in the region.
 FishLedger is a Progressive Web Application (PWA) designed for real-time monitoring of fish prices and supply. It features an AI-driven forecasting engine to predict future price trends, helping both retailers and consumers make informed decisions.
 
 ## Statement of Objectives
-The primary objective is to develop FishLedger, a monitoring and forecasting system for the Lucena Fish Port.
-Specifically, it aims to:
-1. Provide a secure platform for price and supply data entry.
-2. Implement a Linear Regression model for 7-day price forecasting.
-3. Generate automated Daily Market Bulletins in PDF format.
-4. Ensure system quality based on ISO 25010 standards (Functional Suitability, Usability, Performance Efficiency, etc.).
+The general objective of this study will be to enhance the operational efficiency and monitoring capabilities of the Lucena Fish Port Complex by developing a progressive web-based fish market monitoring system with predictive analytics.
+
+Specific Objectives
+This study will aim to:
+- Design and develop a fish market monitoring system for the Lucena Fish Port Complex that will:
+  - Manage retailer information and stall records;
+  - Record and monitor fish arrivals, species, quantities, and market prices;
+  - Identify fish supply sources;
+  - Generate daily, weekly, monthly and annual operational reports;
+  - Provide dashboard-based monitoring and data visualization for decision-making.
+- Design and develop retailer registration, account management, admin verification and role-based access modules within FishLedger, specifically catering to:
+  - Retailer Account Registration and Management;
+  - Consumer Access to Statistical Analysis, Predictive Insights, and Monitoring Dashboards through a View-Only Interface.
+- Design and develop core market monitoring modules to track day-to-day operations, focusing on:
+  - Fish Arrival Monitoring;
+  - Supply Source Identification;
+  - Report Generation;
+  - Dashboard and Data Visualization.
+- Design and develop data analytics features to provide insights and foresight for port operations, including:
+  - Daily fish supply volume;
+  - Expected availability of fish species;
+  - Historical fish arrival trends;
+  - Seasonal fish supply patterns;
+  - Price trends of fish products.
+- Evaluate the developed system based on the ISO/IEC 25010 Software Quality Standards in terms of:
+  - Functional Suitability
+  - Performance Efficiency
+  - Compatibility
+  - Usability
+  - Reliability
+  - Security
 
 ## Scope and Limitations
 The study focuses on the Lucena Fish Port Complex. It covers price monitoring, retailer management, and supply tracking. It does not handle direct financial transactions or e-commerce sales.
