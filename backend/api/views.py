@@ -400,15 +400,18 @@ def get_dashboard_stats(request):
     species_price_list = []
     
     # Get latest average prices for each fish
+    recent_prices = FishPrice.objects.filter(
+        market_date__gte=today - timedelta(days=30)
+    ).values('fish__id').annotate(avg_p=Avg('price_per_kilo'))
+    
+    price_map = {item['fish__id']: item['avg_p'] for item in recent_prices}
+
     for fish in all_fish:
-        avg_p = FishPrice.objects.filter(
-            fish=fish,
-            market_date__gte=today - timedelta(days=30) # Look back 30 days for "current" prices
-        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg'] or 0
+        avg_p = price_map.get(fish.id, 0)
         
         species_price_list.append({
             "name": fish.fish_name,
-            "price": round(float(avg_p), 2),
+            "price": round(float(avg_p), 2) if avg_p else 0,
             "category": fish.category
         })
     
@@ -821,21 +824,29 @@ def get_public_market_view(request):
     all_fish = Fish.objects.all()
     market_summary = []
     
+    # Fetch all recent prices grouped by fish and date
+    recent_prices_qs = FishPrice.objects.filter(
+        market_date__gte=thirty_days_ago
+    ).values('fish__id', 'market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('fish__id', '-market_date')
+    
+    fish_prices = {}
+    for p in recent_prices_qs:
+        fid = p['fish__id']
+        if fid not in fish_prices:
+            fish_prices[fid] = []
+        if len(fish_prices[fid]) < 2:
+            fish_prices[fid].append(float(p['avg_price']))
+
     for fish in all_fish:
-        # Get recent prices
-        recent_prices = FishPrice.objects.filter(
-            fish=fish,
-            market_date__gte=thirty_days_ago
-        ).values('market_date').annotate(avg_price=Avg('price_per_kilo')).order_by('-market_date')
-        
-        current_price = fish.average_price
+        prices = fish_prices.get(fish.id, [])
+        current_price = float(fish.average_price)
         trend = "Stable"
         trend_value = 0.0
         
-        if list(recent_prices):
-            current_price = float(recent_prices[0]['avg_price'])
-            if len(recent_prices) > 1:
-                prev_price = float(recent_prices[1]['avg_price'])
+        if len(prices) > 0:
+            current_price = prices[0]
+            if len(prices) > 1:
+                prev_price = prices[1]
                 trend_value = current_price - prev_price
                 if trend_value > 2:
                     trend = "Increase"
@@ -846,9 +857,9 @@ def get_public_market_view(request):
             "id": fish.id,
             "fish_name": fish.fish_name,
             "category": fish.category,
-            "current_price": round(float(current_price), 2),
+            "current_price": round(current_price, 2),
             "trend": trend,
-            "trend_value": round(float(trend_value), 2),
+            "trend_value": round(trend_value, 2),
             "status": fish.status
         })
         
@@ -1351,6 +1362,8 @@ class AccountApplicationViewSet(viewsets.ModelViewSet):
         if application.status != 'pending':
             return Response({'error': 'Application is already processed'}, status=status.HTTP_400_BAD_REQUEST)
 
+        stall_number = request.data.get('stall_number', 'TBD')
+
         temp_password = f"{application.requested_role[:3].lower()}{random.randint(1000, 9999)}!"
         username = application.full_name.split()[0].lower() + str(random.randint(100, 999))
 
@@ -1368,7 +1381,7 @@ class AccountApplicationViewSet(viewsets.ModelViewSet):
             Retailer.objects.create(
                 user=user,
                 business_name=application.business_name or f"{user.first_name}'s Stall",
-                stall_number="TBD",
+                stall_number=stall_number,
                 contact_number=application.contact_number,
                 email=application.email,
                 address="Lucena Fish Port"

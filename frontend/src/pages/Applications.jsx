@@ -7,6 +7,8 @@ const Applications = () => {
     const [loading, setLoading] = useState(true);
     const [approvalData, setApprovalData] = useState(null);
     const [newAppIds, setNewAppIds] = useState([]); // Track newly arrived apps for glow
+    const [approvingApp, setApprovingApp] = useState(null);
+    const [stallNumber, setStallNumber] = useState('');
 
     useEffect(() => {
         fetchApplications();
@@ -50,10 +52,21 @@ const Applications = () => {
         }
     };
 
-    const handleApprove = async (id) => {
+    const handleApproveClick = (app) => {
+        if (app.requested_role === 'retailer') {
+            setApprovingApp(app);
+            setStallNumber('');
+        } else {
+            submitApprove(app.id, null);
+        }
+    };
+
+    const submitApprove = async (id, stall) => {
         try {
-            const res = await api.post(`applications/${id}/approve/`);
+            const payload = stall ? { stall_number: stall } : {};
+            const res = await api.post(`applications/${id}/approve/`, payload);
             setApprovalData(res.data);
+            setApprovingApp(null);
             fetchApplications();
         } catch (error) {
             console.error("Error approving application:", error);
@@ -80,6 +93,26 @@ const Applications = () => {
     return (
         <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
             <h1 style={{ marginBottom: '30px', color: 'var(--primary-navy)' }}>Account Applications</h1>
+
+            {approvingApp && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <Card style={{ width: '400px', maxWidth: '90%' }}>
+                        <h3 style={{ marginTop: 0, color: 'var(--primary-navy)' }}>Assign Stall Number</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Please assign a stall number for <strong>{approvingApp.full_name}</strong>.</p>
+                        <input 
+                            type="text" 
+                            placeholder="e.g. Stall 14-B" 
+                            value={stallNumber}
+                            onChange={(e) => setStallNumber(e.target.value)}
+                            style={{ width: '100%', padding: '10px', marginTop: '10px', marginBottom: '20px', border: '1px solid var(--border-industrial)', borderRadius: '6px' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button onClick={() => setApprovingApp(null)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--text-muted)', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+                            <button onClick={() => submitApprove(approvingApp.id, stallNumber || 'TBD')} className="btn-primary" style={{ padding: '8px 16px' }}>Confirm Approval</button>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {approvalData && (
                 <Card style={{ marginBottom: '30px', border: '2px solid var(--success-green)', background: '#ecfdf5' }}>
@@ -133,7 +166,7 @@ const Applications = () => {
                                         <td><span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', background: 'var(--secondary-blue)' }}>{app.requested_role.toUpperCase()}</span></td>
                                         <td style={{ color: 'var(--accent-cyan)', fontWeight: '600' }}>{app.appointment_date}</td>
                                         <td>
-                                            <button onClick={() => handleApprove(app.id)} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', marginRight: '10px' }}>Approve</button>
+                                            <button onClick={() => handleApproveClick(app)} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem', marginRight: '10px' }}>Approve</button>
                                             <button onClick={() => handleReject(app.id)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'transparent', color: 'var(--danger-red)', border: '1px solid var(--danger-red)', borderRadius: '4px', cursor: 'pointer' }}>Reject</button>
                                         </td>
                                     </tr>

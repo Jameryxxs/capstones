@@ -383,39 +383,7 @@ const Dashboard = () => {
                 </Card>
             </div>
             
-            <div className="animate-fade-in-up delay-3" style={{ marginBottom: '30px' }}>
-                <Card title="Average Price by Species (Last 30 Days)">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' }}>
-                        {stats.species_prices && stats.species_prices.map((species, i) => (
-                            <div key={i} className="interactive-card" style={{ 
-                                padding: '20px 15px', 
-                                borderRadius: 'var(--radius-md)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center'
-                            }}>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '8px' }}>{species.name}</span>
-                                <span style={{ fontSize: '1.6rem', color: 'var(--primary-navy)', fontWeight: '800', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>₱</span>
-                                    {species.price.toFixed(2)}
-                                </span>
-                                <span style={{ 
-                                    fontSize: '0.65rem', 
-                                    padding: '4px 12px', 
-                                    borderRadius: '20px',
-                                    background: species.category === 'freshwater' ? 'rgba(79, 70, 229, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-                                    border: `1px solid ${species.category === 'freshwater' ? 'rgba(79, 70, 229, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-                                    color: species.category === 'freshwater' ? 'var(--accent-cyan)' : 'var(--success-green)',
-                                    textTransform: 'uppercase',
-                                    fontWeight: 'bold',
-                                    letterSpacing: '1px'
-                                }}>{species.category}</span>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            </div>
+
             
                         <div className="animate-fade-in-up delay-7" style={{ 
                 display: 'grid', 

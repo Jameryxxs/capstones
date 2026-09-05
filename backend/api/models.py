@@ -88,6 +88,13 @@ class FishPrice(models.Model):
     def __str__(self):
         return f"{self.fish.fish_name} - ₱{self.price_per_kilo}"
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['market_date', 'fish']),
+            models.Index(fields=['market_date']),
+            models.Index(fields=['retailer', 'fish']),
+        ]
+
 
 # =====================================================
 # FISHING LOCATIONS TABLE
@@ -189,6 +196,13 @@ class FishDelivery(models.Model):
 
     def __str__(self):
         return f"{self.fish.fish_name} Delivery"
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['delivery_date', 'fish', 'delivery_status']),
+            models.Index(fields=['delivery_date']),
+            models.Index(fields=['retailer', 'fish']),
+        ]
 
 
 # =====================================================

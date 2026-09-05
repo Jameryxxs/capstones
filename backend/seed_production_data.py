@@ -58,11 +58,12 @@ def generate_production_dataset():
     # 3. Locations & Suppliers
     print("📍 Seeding locations and suppliers...")
     locations_data = [
-        ('Tayabas Bay', 'Region IV-A', 'Quezon', 13.8500, 121.6000),
-        ('Lamon Bay', 'Region IV-A', 'Quezon', 14.1500, 122.0500),
-        ('Pagbilao Waters', 'Region IV-A', 'Quezon', 13.9100, 121.7200),
-        ('Batangas Coast', 'Region IV-A', 'Batangas', 13.7500, 121.0500),
-        ('Visayan Sea', 'Region VI', 'Iloilo', 11.5000, 123.5000),
+        ('Panukulan', 'CALABARZON', 'Quezon', 14.8333, 121.8167),
+        ('Infanta', 'CALABARZON', 'Quezon', 14.7333, 121.6500),
+        ('Atimonan', 'CALABARZON', 'Quezon', 14.0000, 121.9167),
+        ('Sariaya', 'CALABARZON', 'Quezon', 13.9667, 121.5333),
+        ('Real', 'CALABARZON', 'Quezon', 14.6667, 121.6000),
+        ('Dolores', 'CALABARZON', 'Quezon', 14.0167, 121.4333),
     ]
     
     supply_objs = []

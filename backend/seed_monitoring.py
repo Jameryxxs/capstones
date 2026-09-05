@@ -14,11 +14,12 @@ def seed_monitoring_data():
     
     # 1. Update Fishing Locations with realistic GPS
     locations = [
-        ('Tayabas Bay', 13.8500, 121.6000),
-        ('Lamon Bay', 14.1500, 122.0500),
-        ('Pagbilao Waters', 13.9100, 121.7200),
-        ('Batangas Coast', 13.7500, 121.0500),
-        ('Visayan Sea', 11.5000, 123.5000),
+        ('Panukulan', 14.8333, 121.8167),
+        ('Infanta', 14.7333, 121.6500),
+        ('Atimonan', 14.0000, 121.9167),
+        ('Sariaya', 13.9667, 121.5333),
+        ('Real', 14.6667, 121.6000),
+        ('Dolores', 14.0167, 121.4333),
     ]
     
     port_lat = 13.9413

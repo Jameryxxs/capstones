@@ -22,12 +22,50 @@ The figure illustrates the iterative cycle of planning, designing, building, and
 ## 3.3 Requirements Analysis
 
 ### 3.3.1 Functional Requirements
-1. **User Management**: Secure role-based access for Admins, Retailers, and Staff using JWT authentication.
-2. **Fish Price Monitoring**: Real-time recording and tracking of market prices across different retailers and species.
-3. **AI Price Forecasting**: A 7-day predictive analysis using Random Forest Regressor models based on historical trends.
-4. **Live Supply Tracking**: A geographic visualization (GIS) of fishing vessels in transit, including their current GPS coordinates and arrival status.
-5. **Automated PDF Generation**: Daily generation of the "Market Bulletin" summarizing port activities.
-6. **Bulletin Board**: An advisory system for weather warnings and port announcements.
+
+The functional requirements describe the specific features and services that FishLedger shall provide to its intended users.
+
+**Administrator**
+* Manage user accounts, roles, and access permissions.
+* Register, update, verify, and manage retailer accounts.
+* Register and manage fish species information.
+* Record and monitor fish arrivals, quantities, and market prices.
+* Record and track fish supply sources and fishing locations.
+* Manage historical fish market records.
+* Generate daily, weekly, monthly, and annual customized reports.
+* View dashboards, charts, and monitoring summaries.
+* View fish supply forecasts and predictive analytics results.
+* View fish species distribution statistics and percentage reports.
+* View price trend analytics and seasonal analytics.
+* View historical comparison analytics.
+* Monitor market stability classifications (Stable or Unstable).
+* Publish announcements and public market information.
+
+**Fish Port Personnel**
+* Record fish arrival information.
+* Record fish species, quantities, and market prices.
+* Update fish supply and source information.
+* Manage fish inventory records.
+* Generate operational reports.
+* View monitoring dashboards and analytics summaries.
+
+**Retailer**
+* Register and manage personal and business profile information.
+* View fish market prices and supply information.
+* Access transaction and activity records related to their account.
+* View fish availability and supply trends.
+* Receive notifications, announcements, and market updates.
+* Access historical price information and analytics reports.
+
+**Public Consumer**
+* View public fish market information.
+* View fish species availability and supply statistics.
+* View fish species percentage distribution reports.
+* View historical fish arrival trends.
+* View seasonal supply analytics.
+* View price trend analytics.
+* Access predictive insights through a view-only interface.
+* Download or view public reports and market summaries.
 
 ### 3.3.2 Non-Functional Requirements
 1. **Security**: Implementation of industry-standard JWT for API security and data encryption.
