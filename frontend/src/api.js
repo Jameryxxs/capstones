@@ -1,9 +1,14 @@
 import axios from "axios";
 
 const getApiBaseUrl = () => {
+    if (process.env.REACT_APP_API_URL) {
+        return process.env.REACT_APP_API_URL;
+    }
+    const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    // Dynamically use the current hostname to connect to the backend
-    return `http://${hostname}:8000/api/`;
+    const port = process.env.REACT_APP_BACKEND_PORT || '8000';
+    // Dynamically use the current protocol and hostname to connect to the backend
+    return `${protocol}//${hostname}:${port}/api/`;
 };
 
 const API_BASE_URL = getApiBaseUrl();

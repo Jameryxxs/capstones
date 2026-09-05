@@ -44,46 +44,68 @@ const Prices = () => {
             .then(res => setFishes(res.data))
             .catch(err => console.error("Failed to fetch fishes", err));
 
-        // WebSocket for Real-time Price Updates
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${wsProtocol}//${window.location.hostname}:8000/ws/updates/`;
-        const socket = new WebSocket(wsUrl);
+        // WebSocket for Real-time Price Updates with auto-reconnect
+        let socket = null;
+        let reconnectTimeout = null;
+        let isUnmounted = false;
 
-        socket.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'PRICE_UPDATE') {
-                    // Refetch prices to update the table instantly
-                    setLoading(true);
-                    const params = new URLSearchParams();
-                    if (selectedDate) params.append('date', selectedDate);
-                    if (searchQuery) params.append('search', searchQuery);
-                    if (minPrice) params.append('min_price', minPrice);
-                    if (maxPrice) params.append('max_price', maxPrice);
+        const connectWebSocket = () => {
+            if (isUnmounted) return;
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsPort = process.env.REACT_APP_BACKEND_PORT || '8000';
+            const wsUrl = `${wsProtocol}//${window.location.hostname}:${wsPort}/ws/updates/`;
+            socket = new WebSocket(wsUrl);
 
-                    api.get(`fish-prices/?${params.toString()}`)
-                        .then(res => {
-                            setPrices(res.data);
-                            setLoading(false);
-                            
-                            // Find the newly added price ID by comparing (assuming highest ID is newest)
-                            if (res.data.length > 0) {
-                                const newId = Math.max(...res.data.map(p => p.id));
-                                setNewPriceIds(prev => [...prev, newId]);
-                                setTimeout(() => {
-                                    setNewPriceIds(prev => prev.filter(id => id !== newId));
-                                }, 10000);
-                            }
-                        });
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'PRICE_UPDATE') {
+                        // Refetch prices to update the table instantly
+                        setLoading(true);
+                        const params = new URLSearchParams();
+                        if (selectedDate) params.append('date', selectedDate);
+                        if (searchQuery) params.append('search', searchQuery);
+                        if (minPrice) params.append('min_price', minPrice);
+                        if (maxPrice) params.append('max_price', maxPrice);
+
+                        api.get(`fish-prices/?${params.toString()}`)
+                            .then(res => {
+                                setPrices(res.data);
+                                setLoading(false);
+                                
+                                // Find the newly added price ID by comparing (assuming highest ID is newest)
+                                if (res.data.length > 0) {
+                                    const newId = Math.max(...res.data.map(p => p.id));
+                                    setNewPriceIds(prev => [...prev, newId]);
+                                    setTimeout(() => {
+                                        setNewPriceIds(prev => prev.filter(id => id !== newId));
+                                    }, 10000);
+                                }
+                            });
+                    }
+                } catch (err) {
+                    console.error("WebSocket message error:", err);
                 }
-            } catch (err) {
-                console.error("WebSocket message error:", err);
-            }
+            };
+
+            socket.onclose = () => {
+                if (!isUnmounted) {
+                    reconnectTimeout = setTimeout(connectWebSocket, 3000);
+                }
+            };
+
+            socket.onerror = () => {
+                if (socket && socket.readyState === 1) socket.close();
+            };
         };
 
+        connectWebSocket();
+
         return () => {
+            isUnmounted = true;
             window.removeEventListener('resize', handleResize);
-            if (socket.readyState === 1) socket.close();
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            if (socket && (socket.readyState === 0 || socket.readyState === 1)) socket.close();
         };
     }, [selectedDate, searchQuery, minPrice, maxPrice]);
 

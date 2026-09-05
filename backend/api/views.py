@@ -1088,20 +1088,6 @@ class FishPriceViewSet(viewsets.ModelViewSet):
     serializer_class = FishPriceSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsRetailerOwnerOrAdmin]
 
-    def perform_create(self, serializer):
-        # Auto-update the Fish's average price based on moving average
-        instance = serializer.save(created_by=self.request.user)
-        fish = instance.fish
-        # Recalculate average price for the last 30 days
-        thirty_days_ago = date.today() - timedelta(days=30)
-        avg = FishPrice.objects.filter(
-            fish=fish, market_date__gte=thirty_days_ago
-        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
-        
-        if avg:
-            fish.average_price = round(avg, 2)
-            fish.save()
-
     def get_queryset(self):
         queryset = FishPrice.objects.select_related('fish', 'retailer').all()
         
@@ -1142,18 +1128,26 @@ class FishPriceViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-market_date', '-id')
 
     def perform_create(self, serializer):
-        # Automatically assign retailer if the user is a retailer (Security/UX)
+        # 1. Automatically assign retailer if the user is a retailer (Security/UX)
         if self.request.user.role == 'retailer':
             try:
                 retailer = Retailer.objects.get(user=self.request.user)
-                serializer.save(created_by=self.request.user, retailer=retailer)
+                instance = serializer.save(created_by=self.request.user, retailer=retailer)
             except Retailer.DoesNotExist:
-                # Fallback if no profile exists yet
-                serializer.save(created_by=self.request.user)
+                instance = serializer.save(created_by=self.request.user)
         else:
-            # For Admins/Staff, use the retailer provided in the payload
-            # If they didn't provide one, it will use the serializer default or raise error
-            serializer.save(created_by=self.request.user)
+            instance = serializer.save(created_by=self.request.user)
+
+        # 2. Recalculate 30-day moving average price for the species
+        fish = instance.fish
+        thirty_days_ago = date.today() - timedelta(days=30)
+        avg = FishPrice.objects.filter(
+            fish=fish, market_date__gte=thirty_days_ago
+        ).aggregate(Avg('price_per_kilo'))['price_per_kilo__avg']
+        
+        if avg:
+            fish.average_price = round(avg, 2)
+            fish.save()
 
 class FishingLocationViewSet(viewsets.ModelViewSet):
     queryset = FishingLocation.objects.all()
@@ -1390,6 +1384,7 @@ class AccountApplicationViewSet(viewsets.ModelViewSet):
             FishingLocation.objects.get_or_create(location_name="Lucena Bay", defaults={'region':'IV-A', 'province':'Quezon', 'latitude':13.9, 'longitude':121.6})
             loc = FishingLocation.objects.first()
             SupplySource.objects.create(
+                user=user,
                 supplier_type='vessel',
                 supplier_name=application.full_name,
                 boat_name=application.business_name or f"{user.first_name}'s Boat",

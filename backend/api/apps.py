@@ -11,10 +11,11 @@ class ApiConfig(AppConfig):
         import os
         import sys
         
-        # Start the scheduler only if running the actual server, not during migrations
-        if os.environ.get('RUN_MAIN', None) == 'true' or 'runserver' not in sys.argv:
-            # Check to avoid running twice in development or during manage.py commands like migrate
-            is_management_command = len(sys.argv) > 1 and sys.argv[1] != 'runserver'
-            if not is_management_command:
-                from api import scheduler
-                scheduler.start()
+        # Start the scheduler only if running the actual dev server or when explicitly enabled
+        is_runserver = any('runserver' in arg for arg in sys.argv)
+        is_main_worker = os.environ.get('RUN_MAIN') == 'true'
+        explicitly_enabled = os.environ.get('ENABLE_SCHEDULER') == 'true'
+        
+        if (is_runserver and is_main_worker) or explicitly_enabled:
+            from api import scheduler
+            scheduler.start()

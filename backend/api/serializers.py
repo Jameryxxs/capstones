@@ -84,7 +84,7 @@ class FishingLocationSerializer(serializers.ModelSerializer):
 class SupplySourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = SupplySource
-        fields = ('id', 'supplier_name', 'boat_name', 'fishing_location', 'contact_number', 'status', 'current_lat', 'current_lng', 'arrival_date', 'created_at')
+        fields = ('id', 'user', 'supplier_type', 'supplier_name', 'boat_name', 'fishing_location', 'contact_number', 'status', 'current_lat', 'current_lng', 'arrival_date', 'created_at')
 
 class InventorySerializer(serializers.ModelSerializer):
     class Meta:

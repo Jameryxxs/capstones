@@ -1,4 +1,13 @@
 
+import os
+import sys
+import django
+
+# Set up Django environment
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
+django.setup()
+
 from api.models import Fish, FishPrice, Prediction, Bulletin, User
 from datetime import date, timedelta
 from django.db.models import Avg

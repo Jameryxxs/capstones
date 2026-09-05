@@ -128,6 +128,7 @@ class SupplySource(models.Model):
         ('external', 'External Supplier'),
     )
 
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='vessel')
     supplier_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='vessel')
     supplier_name = models.CharField(max_length=255)
     boat_name = models.CharField(max_length=255, blank=True, null=True)
